@@ -46,7 +46,7 @@ export default function BookingsPage() {
       if (fetchError) throw fetchError
 
       setBookings(
-        data.map((booking) => ({
+        (data || []).map((booking: any) => ({
           id: booking.id,
           name: booking.name,
           email: booking.email,
