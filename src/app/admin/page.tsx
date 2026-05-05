@@ -69,9 +69,9 @@ export default function AdminDashboard() {
 
       // Calculate stats
       const pendingCount = (bookingsData || []).filter(
-        (b) => b.status === "pending"
+        (b: any) => b.status === "pending"
       ).length
-      const activeCount = (spacesData || []).filter((s) => s.is_active).length
+      const activeCount = (spacesData || []).filter((s: any) => s.is_active).length
 
       setStats({
         totalBookings: bookingsData?.length || 0,
@@ -82,7 +82,7 @@ export default function AdminDashboard() {
 
       // Get recent bookings (first 3)
       setRecentBookings(
-        (bookingsData || []).slice(0, 3).map((booking) => ({
+        (bookingsData || []).slice(0, 3).map((booking: any) => ({
           id: booking.id,
           name: booking.name,
           spaces: booking.spaces || [],
