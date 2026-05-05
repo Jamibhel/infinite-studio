@@ -1,7 +1,0 @@
-{
-  "/blog/page": "app/blog/page.js",
-  "/booking/page": "app/booking/page.js",
-  "/gallery/page": "app/gallery/page.js",
-  "/spaces/page": "app/spaces/page.js",
-  "/page": "app/page.js"
-}
