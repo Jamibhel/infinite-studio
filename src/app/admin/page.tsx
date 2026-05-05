@@ -1,36 +1,57 @@
 "use client"
 
 import { AdminLayout } from "@/components/AdminLayout"
-import Link from "next/link"
 import { motion } from "framer-motion"
-import { BarChart3, Calendar, Image, Settings } from "lucide-react"
+import {
+  BarChart3,
+  TrendingUp,
+  Calendar,
+  Users,
+  DollarSign,
+  AlertCircle,
+  ArrowUpRight,
+  ArrowDownRight,
+} from "lucide-react"
+import Link from "next/link"
 import { useState, useEffect } from "react"
 import { createClient } from "@supabase/supabase-js"
+import toast from "react-hot-toast"
 
 interface DashboardStats {
+  totalRevenue: number
   totalBookings: number
   pendingBookings: number
-  galleryItems: number
+  confirmedBookings: number
   activeSpaces: number
+  totalCustomers: number
+  occupancyRate: number
+  averageBookingValue: number
 }
 
 interface RecentBooking {
   id: string
   name: string
-  spaces: string[]
-  status: string
+  email: string
+  space: string
   date: string
+  status: "pending" | "confirmed" | "completed"
+  amount: number
 }
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState<DashboardStats>({
+    totalRevenue: 0,
     totalBookings: 0,
     pendingBookings: 0,
-    galleryItems: 0,
+    confirmedBookings: 0,
     activeSpaces: 0,
+    totalCustomers: 0,
+    occupancyRate: 0,
+    averageBookingValue: 0,
   })
   const [recentBookings, setRecentBookings] = useState<RecentBooking[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState("")
 
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL || "",
@@ -45,7 +66,7 @@ export default function AdminDashboard() {
     try {
       setLoading(true)
 
-      // Fetch bookings
+      // Fetch bookings data
       const { data: bookingsData, error: bookingsError } = await supabase
         .from("bookings")
         .select("*")
@@ -53,179 +74,314 @@ export default function AdminDashboard() {
 
       if (bookingsError) throw bookingsError
 
-      // Fetch spaces
+      // Fetch spaces data
       const { data: spacesData, error: spacesError } = await supabase
         .from("spaces")
         .select("*")
 
       if (spacesError) throw spacesError
 
-      // Fetch gallery items
-      const { data: galleryData, error: galleryError } = await supabase.storage
-        .from("gallery")
-        .list()
+      // Calculate statistics
+      const total = bookingsData?.length || 0
+      const pending = (bookingsData || []).filter((b: any) => b.status === "pending").length
+      const confirmed = (bookingsData || []).filter((b: any) => b.status === "confirmed").length
+      const completed = (bookingsData || []).filter((b: any) => b.status === "completed").length
 
-      if (galleryError) throw galleryError
-
-      // Calculate stats
-      const pendingCount = (bookingsData || []).filter(
-        (b: any) => b.status === "pending"
-      ).length
+      const totalRev = (bookingsData || []).reduce((sum: number, b: any) => sum + (b.amount || 0), 0)
+      const avgValue = total > 0 ? totalRev / total : 0
       const activeCount = (spacesData || []).filter((s: any) => s.is_active).length
 
       setStats({
-        totalBookings: bookingsData?.length || 0,
-        pendingBookings: pendingCount,
-        galleryItems: galleryData?.length || 0,
+        totalRevenue: totalRev,
+        totalBookings: total,
+        pendingBookings: pending,
+        confirmedBookings: confirmed,
         activeSpaces: activeCount,
+        totalCustomers: total,
+        occupancyRate: total > 0 ? Math.round((confirmed / total) * 100) : 0,
+        averageBookingValue: Math.round(avgValue),
       })
 
-      // Get recent bookings (first 3)
+      // Set recent bookings (first 5)
       setRecentBookings(
-        (bookingsData || []).slice(0, 3).map((booking: any) => ({
-          id: booking.id,
-          name: booking.name,
-          spaces: booking.spaces || [],
-          status: booking.status || "pending",
-          date: booking.date,
+        (bookingsData || []).slice(0, 5).map((b: any) => ({
+          id: b.id,
+          name: b.name,
+          email: b.email,
+          space: (b.spaces || []).join(", ") || "Not specified",
+          date: b.date,
+          status: b.status || "pending",
+          amount: b.amount || 0,
         }))
       )
+
+      setError("")
     } catch (err) {
       console.error("Error fetching dashboard data:", err)
+      setError("Failed to load dashboard data")
+      toast.error("Failed to load dashboard data")
     } finally {
       setLoading(false)
     }
   }
 
-  const statConfig = [
-    { label: "Total Bookings", value: stats.totalBookings, icon: Calendar, color: "bg-blue-50" },
-    { label: "Pending", value: stats.pendingBookings, icon: Calendar, color: "bg-yellow-50" },
-    { label: "Gallery Items", value: stats.galleryItems, icon: Image, color: "bg-purple-50" },
-    { label: "Active Spaces", value: stats.activeSpaces, icon: Settings, color: "bg-green-50" },
-  ]
+  const StatCard = ({
+    title,
+    value,
+    icon: Icon,
+    trend,
+    color,
+  }: {
+    title: string
+    value: string | number
+    icon: any
+    trend?: number
+    color: string
+  }) => (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="card p-6 rounded-lg"
+      style={{
+        backgroundColor: "var(--surface)",
+        borderColor: "var(--border)",
+        border: "1px solid",
+      }}
+    >
+      <div className="flex items-start justify-between">
+        <div>
+          <p className="text-sm" style={{ color: "var(--text-muted)" }}>
+            {title}
+          </p>
+          <p className="text-3xl font-bold mt-2">{value}</p>
+          {trend !== undefined && (
+            <div className="flex items-center gap-1 mt-2 text-sm">
+              {trend >= 0 ? (
+                <>
+                  <ArrowUpRight className="w-4 h-4 text-green-500" />
+                  <span className="text-green-500">+{trend}%</span>
+                </>
+              ) : (
+                <>
+                  <ArrowDownRight className="w-4 h-4 text-red-500" />
+                  <span className="text-red-500">{trend}%</span>
+                </>
+              )}
+            </div>
+          )}
+        </div>
+        <div
+          className="p-3 rounded-lg"
+          style={{ backgroundColor: color, opacity: 0.1 }}
+        >
+          <Icon className="w-6 h-6" style={{ color }} />
+        </div>
+      </div>
+    </motion.div>
+  )
 
-  const statusColors: Record<string, string> = {
-    pending: "bg-yellow-100 text-yellow-800",
-    confirmed: "bg-green-100 text-green-800",
-    completed: "bg-blue-100 text-blue-800",
+  if (loading) {
+    return (
+      <AdminLayout>
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <div className="w-12 h-12 border-4 border-gray-300 border-t-blue-500 rounded-full animate-spin mx-auto mb-4"></div>
+            <p>Loading dashboard...</p>
+          </div>
+        </div>
+      </AdminLayout>
+    )
   }
 
   return (
     <AdminLayout>
-      <div className="space-y-8">
-        <div>
-          <h1 className="font-display text-4xl font-bold mb-2">Dashboard</h1>
-          <p className="font-body text-gray-600">Welcome to your control center</p>
+      <div className="space-y-6">
+        {/* Header */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="flex justify-between items-start"
+        >
+          <div>
+            <h1 className="font-display text-4xl font-bold mb-2">Dashboard</h1>
+            <p className="text-gray-600">Welcome back! Here's your studio overview.</p>
+          </div>
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="px-6 py-3 rounded-lg font-semibold text-white"
+            style={{ backgroundColor: "var(--primary)" }}
+            onClick={fetchDashboardData}
+          >
+            Refresh
+          </motion.button>
+        </motion.div>
+
+        {error && (
+          <div className="p-4 bg-red-50 border border-red-200 rounded-lg flex gap-3">
+            <AlertCircle className="text-red-500 flex-shrink-0 w-5 h-5 mt-0.5" />
+            <div>
+              <p className="font-semibold text-red-900">Error</p>
+              <p className="text-red-800">{error}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Key Stats */}
+        <div className="grid md:grid-cols-4 gap-4">
+          <StatCard
+            title="Total Revenue"
+            value={`₦${stats.totalRevenue.toLocaleString()}`}
+            icon={DollarSign}
+            color="#10b981"
+            trend={12}
+          />
+          <StatCard
+            title="Total Bookings"
+            value={stats.totalBookings}
+            icon={Calendar}
+            color="#3b82f6"
+            trend={8}
+          />
+          <StatCard
+            title="Pending Bookings"
+            value={stats.pendingBookings}
+            icon={AlertCircle}
+            color="#f59e0b"
+          />
+          <StatCard
+            title="Active Spaces"
+            value={stats.activeSpaces}
+            icon={BarChart3}
+            color="#8b5cf6"
+          />
         </div>
 
-        {/* Stats Grid */}
-        {loading ? (
-          <div className="flex justify-center items-center h-64">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-dark-accent"></div>
-          </div>
-        ) : (
-          <>
-            <div className="grid md:grid-cols-4 gap-6">
-              {statConfig.map((stat, i) => {
-                const Icon = stat.icon
-                return (
-                  <motion.div
-                    key={i}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.1 }}
-                    className={`${stat.color} rounded-soft p-6 border border-gray-200`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-body text-sm text-gray-600 mb-1">{stat.label}</p>
-                        <p className="font-display text-3xl font-bold">{stat.value}</p>
-                      </div>
-                      <div className="p-3 bg-white/50 rounded-soft">
-                        <Icon size={24} className="text-dark-accent" />
-                      </div>
-                    </div>
-                  </motion.div>
-                )
-              })}
-            </div>
+        {/* Secondary Stats */}
+        <div className="grid md:grid-cols-3 gap-4">
+          <StatCard
+            title="Avg Booking Value"
+            value={`₦${stats.averageBookingValue.toLocaleString()}`}
+            icon={TrendingUp}
+            color="#06b6d4"
+          />
+          <StatCard
+            title="Confirmed Bookings"
+            value={stats.confirmedBookings}
+            icon={Calendar}
+            color="#10b981"
+          />
+          <StatCard
+            title="Occupancy Rate"
+            value={`${stats.occupancyRate}%`}
+            icon={BarChart3}
+            color="#ec4899"
+          />
+        </div>
 
-            {/* Recent Bookings */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
-              className="bg-white rounded-soft p-6 border border-gray-200"
+        {/* Quick Actions */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="grid md:grid-cols-4 gap-4"
+        >
+          {[
+            { title: "New Booking", href: "/admin/bookings", icon: "📅" },
+            { title: "Manage Spaces", href: "/admin/spaces", icon: "🎬" },
+            { title: "Gallery", href: "/admin/gallery", icon: "🖼️" },
+            { title: "Settings", href: "/admin/settings", icon: "⚙️" },
+          ].map((action, idx) => (
+            <Link href={action.href} key={idx}>
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                className="card p-6 text-center cursor-pointer transition-colors rounded-lg"
+                style={{
+                  backgroundColor: "var(--surface)",
+                  borderColor: "var(--border)",
+                  border: "1px solid",
+                }}
+              >
+                <div className="text-3xl mb-2">{action.icon}</div>
+                <p className="font-semibold">{action.title}</p>
+                <p className="text-xs text-gray-600 mt-1">Manage {action.title.toLowerCase()}</p>
+              </motion.div>
+            </Link>
+          ))}
+        </motion.div>
+
+        {/* Recent Bookings */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="card p-6 rounded-lg"
+          style={{
+            backgroundColor: "var(--surface)",
+            borderColor: "var(--border)",
+            border: "1px solid",
+          }}
+        >
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-2xl font-bold">Recent Bookings</h2>
+            <Link
+              href="/admin/bookings"
+              className="text-blue-500 hover:text-blue-700 font-semibold"
             >
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="font-display text-xl font-bold">Recent Bookings</h2>
-                <Link href="/admin/bookings" className="text-dark-accent text-sm font-semibold hover:underline">
-                  View All →
-                </Link>
-              </div>
-              {recentBookings.length === 0 ? (
-                <p className="text-gray-500 text-center py-8">No bookings yet</p>
-              ) : (
-                <div className="space-y-4">
-                  {recentBookings.map((booking) => (
-                    <div key={booking.id} className="flex items-center justify-between py-3 border-b border-gray-200 last:border-b-0">
-                      <div>
-                        <p className="font-semibold">{booking.name}</p>
-                        <p className="font-body text-sm text-gray-600">
-                          {booking.spaces.join(", ")} · {booking.date}
-                        </p>
-                      </div>
-                      <span
-                        className={`px-3 py-1 rounded-full font-body text-sm ${
-                          statusColors[booking.status] || "bg-gray-100 text-gray-800"
-                        }`}
-                      >
-                        {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
-                      </span>
-                    </div>
+              View All →
+            </Link>
+          </div>
+
+          {recentBookings.length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <thead>
+                  <tr style={{ borderBottomColor: "var(--border)" }} className="border-b">
+                    <th className="pb-3 font-semibold">Customer</th>
+                    <th className="pb-3 font-semibold">Space</th>
+                    <th className="pb-3 font-semibold">Date</th>
+                    <th className="pb-3 font-semibold">Amount</th>
+                    <th className="pb-3 font-semibold">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {recentBookings.map((booking, idx) => (
+                    <tr
+                      key={idx}
+                      style={{ borderBottomColor: "var(--border)" }}
+                      className="border-b hover:bg-gray-50 transition-colors"
+                    >
+                      <td className="py-3">
+                        <div>
+                          <p className="font-semibold">{booking.name}</p>
+                          <p className="text-xs text-gray-500">{booking.email}</p>
+                        </div>
+                      </td>
+                      <td className="py-3">{booking.space}</td>
+                      <td className="py-3">{booking.date}</td>
+                      <td className="py-3 font-semibold">₦{booking.amount.toLocaleString()}</td>
+                      <td className="py-3">
+                        <span
+                          className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                            booking.status === "confirmed"
+                              ? "bg-green-100 text-green-700"
+                              : booking.status === "pending"
+                              ? "bg-yellow-100 text-yellow-700"
+                              : "bg-blue-100 text-blue-700"
+                          }`}
+                        >
+                          {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
+                        </span>
+                      </td>
+                    </tr>
                   ))}
-                </div>
-              )}
-            </motion.div>
-
-            {/* Quick Actions */}
-            <div className="grid md:grid-cols-2 gap-6">
-              <Link href="/admin/bookings">
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.5 }}
-                  className="bg-dark-accent/10 rounded-soft p-6 border border-dark-accent/20 hover:border-dark-accent/50 transition cursor-pointer"
-                >
-                  <h3 className="font-display font-bold mb-3">Manage Bookings</h3>
-                  <p className="font-body text-sm text-gray-700 mb-4">
-                    Review, confirm, and manage all studio bookings
-                  </p>
-                  <span className="px-4 py-2 bg-dark-accent text-white rounded-soft font-semibold inline-block">
-                    View All
-                  </span>
-                </motion.div>
-              </Link>
-
-              <Link href="/admin/gallery">
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.6 }}
-                  className="bg-blue-50 rounded-soft p-6 border border-blue-200 hover:border-blue-400 transition cursor-pointer"
-                >
-                  <h3 className="font-display font-bold mb-3">Upload Gallery</h3>
-                  <p className="font-body text-sm text-gray-700 mb-4">
-                    Add new shoot photos and organize your gallery
-                  </p>
-                  <span className="px-4 py-2 bg-blue-600 text-white rounded-soft font-semibold inline-block">
-                    Upload
-                  </span>
-                </motion.div>
-              </Link>
+                </tbody>
+              </table>
             </div>
-          </>
-        )}
+          ) : (
+            <div className="text-center py-8 text-gray-500">
+              <p>No bookings yet. Check back later!</p>
+            </div>
+          )}
+        </motion.div>
       </div>
     </AdminLayout>
   )
