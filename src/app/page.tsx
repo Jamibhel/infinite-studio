@@ -297,28 +297,28 @@ export default function Home() {
                 role: "Podcast Host & Creator",
                 quote:
                   "Infinite Studio completely changed my production game. The equipment is top-notch and the team is super supportive!",
-                avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop",
+                avatar: "https://images.unsplash.com/photo-1507009974461-92a795e61a81?w=100&h=100&fit=crop",
               },
               {
                 name: "Folake Okafor",
                 role: "Beauty & Lifestyle Creator",
                 quote:
                   "Finally found a studio that looks as good as studios in Lagos. The lighting is absolutely perfect!",
-                avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop",
+                avatar: "https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=100&h=100&fit=crop",
               },
               {
                 name: "Chisom Nwankwo",
                 role: "YouTube Content Creator",
                 quote:
                   "The flexibility with booking slots is amazing. I can create on my schedule without any stress.",
-                avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&h=100&fit=crop",
+                avatar: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=100&h=100&fit=crop",
               },
               {
                 name: "Ife Adelusi",
                 role: "Corporate Video Producer",
                 quote:
                   "Professional setup, creative team, and pricing that makes sense. Highly recommend for brands!",
-                avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop",
+                avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop",
               },
             ].map((testimonial, idx) => (
               <motion.div
