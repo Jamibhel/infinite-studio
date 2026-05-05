@@ -41,7 +41,7 @@ export default function SpacesPage() {
       if (fetchError) throw fetchError
 
       setSpaces(
-        data.map((space) => ({
+        data.map((space: any) => ({
           id: space.id,
           name: space.name,
           mood_tag: space.mood_tag || "",
