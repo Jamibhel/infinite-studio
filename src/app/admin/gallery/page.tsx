@@ -41,7 +41,7 @@ export default function GalleryPage() {
       if (listError) throw listError
 
       // Get public URLs for each file
-      const itemsWithUrls = (data || []).map((file) => {
+      const itemsWithUrls = (data || []).map((file: any) => {
         const urlData = supabase.storage
           .from("gallery")
           .getPublicUrl(file.name)
