@@ -2,6 +2,8 @@
 
 A premium content creation studio booking platform built with Next.js 14, Supabase, and Tailwind CSS.
 
+**Status:** ✅ Restructured for Vercel deployment (project root contains package.json and all source files)
+
 ## 📋 Project Overview
 
 Infinite Studio is a full-featured website and admin dashboard for a creative studio in Abeokuta. It includes:
