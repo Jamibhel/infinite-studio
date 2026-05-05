@@ -1,0 +1,76 @@
+{
+  "name": "Infinite Studio - Content Creation Studio",
+  "short_name": "Infinite Studio",
+  "description": "Premium content creation studio in Abeokuta with 8 professional spaces, flexible booking, and creative support.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f7ede3",
+  "theme_color": "#c4623a",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-192-maskable.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icon-512-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshot-1.png",
+      "sizes": "540x720",
+      "type": "image/png"
+    },
+    {
+      "src": "/screenshot-2.png",
+      "sizes": "540x720",
+      "type": "image/png"
+    }
+  ],
+  "categories": ["photography", "productivity"],
+  "orientation": "portrait-primary",
+  "shortcuts": [
+    {
+      "name": "Book Studio",
+      "short_name": "Book",
+      "description": "Book your studio session",
+      "url": "/booking",
+      "icons": [
+        {
+          "src": "/shortcut-icon.png",
+          "sizes": "96x96"
+        }
+      ]
+    },
+    {
+      "name": "View Spaces",
+      "short_name": "Spaces",
+      "description": "View all studio spaces",
+      "url": "/spaces",
+      "icons": [
+        {
+          "src": "/shortcut-spaces.png",
+          "sizes": "96x96"
+        }
+      ]
+    }
+  ]
+}
