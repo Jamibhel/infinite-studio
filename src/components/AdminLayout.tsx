@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter, usePathname } from "next/navigation"
 import { motion } from "framer-motion"
 import { LogOut, Menu, X, Home, Calendar, Grid, Settings, Moon, Sun, ChevronRight } from "lucide-react"
@@ -11,10 +11,16 @@ import { ProtectedRoute } from "./ProtectedRoute"
 
 function AdminLayoutContent({ children }: { children: React.ReactNode }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [isClient, setIsClient] = useState(false)
   const router = useRouter()
   const pathname = usePathname()
   const { logout, user } = useAuth()
   const { theme, toggleTheme } = useTheme()
+
+  // Ensure hooks only run on client
+  useEffect(() => {
+    setIsClient(true)
+  }, [])
 
   const handleLogout = () => {
     logout()
@@ -34,7 +40,15 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
 
   return (
     <ProtectedRoute>
-      <div className="flex flex-col h-screen bg-[var(--bg)] text-[var(--text-primary)]">
+      {!isClient ? (
+        <div className="flex flex-col h-screen bg-[var(--bg)] text-[var(--text-primary)]">
+          <div className="bg-[var(--surface)] border-b border-[var(--border)] px-8 py-4">
+            <h1 className="font-display text-2xl font-bold text-[var(--text-primary)]">Infinite</h1>
+          </div>
+          <div className="flex-1 overflow-auto p-8 bg-[var(--bg)]">{children}</div>
+        </div>
+      ) : (
+        <div className="flex flex-col h-screen bg-[var(--bg)] text-[var(--text-primary)]">
         {/* Unified Top Navigation */}
         <div className="bg-[var(--surface)] border-b border-[var(--border)] shadow-sm">
           {/* Desktop Navigation */}
@@ -108,45 +122,45 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
             </div>
           </div>
 
-          {/* Mobile Dropdown Menu */}
-          {mobileMenuOpen && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="md:hidden border-t border-[var(--border)] bg-[var(--surface)] px-4 py-3 space-y-2"
-            >
-              {navItems.map((item) => {
-                const Icon = item.icon
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    onClick={() => setMobileMenuOpen(false)}
-                    className={`flex items-center justify-between px-4 py-3 rounded-soft transition-all font-body text-sm ${
-                      isActive(item.href)
-                        ? "bg-[var(--cta-primary)] text-white"
-                        : "text-[var(--text-primary)] hover:bg-[var(--bg)]"
-                    }`}
-                  >
-                    <span className="flex items-center gap-3">
-                      <Icon size={16} />
-                      {item.label}
-                    </span>
-                    <ChevronRight size={16} />
-                  </Link>
-                )
-              })}
+        {/* Mobile Dropdown Menu */}
+        {mobileMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="md:hidden absolute top-full left-0 right-0 border-t border-[var(--border)] bg-[var(--surface)] px-4 py-3 space-y-2 z-50 shadow-lg max-h-96 overflow-y-auto"
+          >
+            {navItems.map((item) => {
+              const Icon = item.icon
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className={`flex items-center justify-between px-4 py-3 rounded-soft transition-all font-body text-sm ${
+                    isActive(item.href)
+                      ? "bg-[var(--cta-primary)] text-white"
+                      : "text-[var(--text-primary)] hover:bg-[var(--bg)]"
+                  }`}
+                >
+                  <span className="flex items-center gap-3">
+                    <Icon size={16} />
+                    {item.label}
+                  </span>
+                  <ChevronRight size={16} />
+                </Link>
+              )
+            })}
 
-              <button
-                onClick={handleLogout}
-                className="w-full flex items-center gap-2 px-4 py-3 rounded-soft bg-[var(--cta-primary)] hover:bg-[var(--cta-hover)] transition-colors text-white font-body text-sm mt-2"
-              >
-                <LogOut size={16} />
-                <span>Logout</span>
-              </button>
-            </motion.div>
-          )}
+            <button
+              onClick={handleLogout}
+              className="w-full flex items-center gap-2 px-4 py-3 rounded-soft bg-[var(--cta-primary)] hover:bg-[var(--cta-hover)] transition-colors text-white font-body text-sm mt-2"
+            >
+              <LogOut size={16} />
+              <span>Logout</span>
+            </button>
+          </motion.div>
+        )}
         </div>
 
         {/* Page Title & Welcome */}
@@ -158,7 +172,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
         <div className="flex-1 overflow-auto p-4 md:p-8 bg-[var(--bg)]">{children}</div>
 
         {/* Mobile Bottom Navigation */}
-        <div className="md:hidden fixed bottom-0 left-0 right-0 bg-[var(--surface)] border-t border-[var(--border)] grid grid-cols-5 gap-0 shadow-lg z-30">
+        <div className="md:hidden fixed bottom-0 left-0 right-0 bg-[var(--surface)] border-t border-[var(--border)] grid grid-cols-5 gap-0 shadow-lg z-40">
           {navItems.map((item) => {
             const Icon = item.icon
             const active = isActive(item.href)
@@ -182,6 +196,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
         {/* Mobile Bottom Spacing */}
         <div className="md:hidden h-20" />
       </div>
+      )}
     </ProtectedRoute>
   )
 }
