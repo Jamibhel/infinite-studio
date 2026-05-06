@@ -49,57 +49,57 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
         </div>
       ) : (
         <div className="flex flex-col h-screen bg-[var(--bg)] text-[var(--text-primary)]">
-          {/* Unified Top Navigation */}
-          <div className="bg-[var(--surface)] border-b border-[var(--border)] shadow-sm">
-            {/* Desktop Navigation */}
-            <div className="hidden md:flex items-center justify-between px-8 py-4">
-              <div>
-                <h1 className="font-display text-2xl font-bold text-[var(--text-primary)]">Infinite</h1>
-                <p className="font-body text-xs text-[var(--text-muted)]">Admin Suite</p>
-              </div>
-
-              {/* Desktop Nav Items */}
-              <nav className="flex items-center gap-1">
-                {navItems.map((item) => {
-                  const Icon = item.icon
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      className={`flex items-center gap-2 px-4 py-2 rounded-soft transition-all font-body text-sm ${
-                        isActive(item.href)
-                          ? "bg-[var(--cta-primary)] text-white"
-                          : "text-[var(--text-primary)] hover:bg-[var(--bg)]"
-                      }`}
-                    >
-                      <Icon size={16} />
-                      {item.label}
-                    </Link>
-                  )
-                })}
-              </nav>
-
-              {/* Desktop Controls */}
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={toggleTheme}
-                  className="p-2 hover:bg-[var(--bg)] rounded-soft transition-colors"
-                  title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
-                >
-                  {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
-                </button>
-                <button
-                  onClick={handleLogout}
-                  className="flex items-center gap-2 px-4 py-2 rounded-soft bg-[var(--cta-primary)] hover:bg-[var(--cta-hover)] transition-colors text-white font-body text-sm"
-                >
-                  <LogOut size={16} />
-                  <span>Logout</span>
-                </button>
-              </div>
+          {/* DESKTOP NAVIGATION */}
+          <div className="hidden md:flex items-center justify-between px-8 py-4 bg-[var(--surface)] border-b border-[var(--border)] shadow-sm">
+            <div>
+              <h1 className="font-display text-2xl font-bold text-[var(--text-primary)]">Infinite</h1>
+              <p className="font-body text-xs text-[var(--text-muted)]">Admin Suite</p>
             </div>
 
-            {/* Mobile Navigation Header */}
-            <div className="md:hidden flex items-center justify-between px-4 py-3">
+            {/* Desktop Nav Items */}
+            <nav className="flex items-center gap-1">
+              {navItems.map((item) => {
+                const Icon = item.icon
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-soft transition-all font-body text-sm ${
+                      isActive(item.href)
+                        ? "bg-[var(--cta-primary)] text-white"
+                        : "text-[var(--text-primary)] hover:bg-[var(--bg)]"
+                    }`}
+                  >
+                    <Icon size={16} />
+                    {item.label}
+                  </Link>
+                )
+              })}
+            </nav>
+
+            {/* Desktop Controls */}
+            <div className="flex items-center gap-3">
+              <button
+                onClick={toggleTheme}
+                className="p-2 hover:bg-[var(--bg)] rounded-soft transition-colors"
+                title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
+              >
+                {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
+              </button>
+              <button
+                onClick={handleLogout}
+                className="flex items-center gap-2 px-4 py-2 rounded-soft bg-[var(--cta-primary)] hover:bg-[var(--cta-hover)] transition-colors text-white font-body text-sm"
+              >
+                <LogOut size={16} />
+                <span>Logout</span>
+              </button>
+            </div>
+          </div>
+
+          {/* MOBILE NAVIGATION */}
+          <div className="md:hidden bg-[var(--surface)] border-b border-[var(--border)] shadow-sm">
+            {/* Mobile Header */}
+            <div className="flex items-center justify-between px-4 py-3">
               <div>
                 <h1 className="font-display text-lg font-bold text-[var(--text-primary)]">Infinite</h1>
                 <p className="font-body text-xs text-[var(--text-muted)]">{currentPage.label}</p>
@@ -128,7 +128,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
-                className="md:hidden absolute top-full left-0 right-0 border-t border-[var(--border)] bg-[var(--surface)] px-4 py-3 space-y-2 z-50 shadow-lg max-h-96 overflow-y-auto"
+                className="border-t border-[var(--border)] bg-[var(--surface)] px-4 py-3 space-y-2 z-50 shadow-lg max-h-96 overflow-y-auto"
               >
                 {navItems.map((item) => {
                   const Icon = item.icon
