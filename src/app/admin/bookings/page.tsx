@@ -136,84 +136,88 @@ export default function BookingsPage() {
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="font-display text-4xl font-bold mb-2">Bookings Manager</h1>
-            <p className="font-body text-gray-600">Manage all studio bookings</p>
+            <h1 className="heading-h1 mb-2">Bookings Manager</h1>
+            <p className="body-text text-[var(--text-muted)]">Manage all studio bookings</p>
           </div>
           <button
             onClick={fetchBookings}
-            className="px-4 py-2 bg-dark-accent text-white rounded-lg hover:bg-opacity-90 transition"
+            className="px-4 py-2 bg-[var(--cta-primary)] text-white rounded-lg hover:bg-[var(--cta-hover)] transition-colors"
           >
             Refresh
           </button>
         </div>
 
         {error && (
-          <div className="p-4 bg-red-50 border border-red-200 rounded-lg flex gap-3">
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="p-4 bg-red-50 border border-red-200 rounded-lg flex gap-3"
+          >
             <AlertCircle className="text-red-500 flex-shrink-0 w-5 h-5 mt-0.5" />
             <div>
-              <p className="text-red-700 font-semibold">Error Loading Bookings</p>
-              <p className="text-red-600 text-sm">{error}</p>
+              <p className="text-red-700 font-semibold font-body">Error Loading Bookings</p>
+              <p className="text-red-600 text-sm font-body">{error}</p>
             </div>
-          </div>
+          </motion.div>
         )}
 
         {loading ? (
           <div className="flex justify-center items-center h-64">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-dark-accent"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-4 border-[var(--border)] border-t-[var(--cta-primary)]"></div>
           </div>
         ) : bookings.length === 0 ? (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="bg-white rounded-lg border border-gray-200 p-12 text-center"
+            className="bg-[var(--surface)] rounded-lg border border-[var(--border)] p-12 text-center"
           >
-            <p className="text-gray-500 text-lg">No bookings yet</p>
+            <p className="body-text text-[var(--text-muted)] text-lg">No bookings yet</p>
           </motion.div>
         ) : (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-white rounded-soft border border-gray-200 overflow-hidden"
+            className="bg-[var(--surface)] rounded-lg border border-[var(--border)] overflow-hidden"
           >
             <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
+              <thead className="bg-[var(--bg)] border-b border-[var(--border)]">
                 <tr>
-                  <th className="px-6 py-3 text-left font-semibold text-sm text-gray-700">Client</th>
-                  <th className="px-6 py-3 text-left font-semibold text-sm text-gray-700">Spaces</th>
-                  <th className="px-6 py-3 text-left font-semibold text-sm text-gray-700">Date & Time</th>
-                  <th className="px-6 py-3 text-left font-semibold text-sm text-gray-700">Group Size</th>
-                  <th className="px-6 py-3 text-left font-semibold text-sm text-gray-700">Status</th>
-                  <th className="px-6 py-3 text-left font-semibold text-sm text-gray-700">Actions</th>
+                  <th className="px-6 py-3 text-left font-semibold text-sm text-[var(--text-primary)]">Client</th>
+                  <th className="px-6 py-3 text-left font-semibold text-sm text-[var(--text-primary)]">Spaces</th>
+                  <th className="px-6 py-3 text-left font-semibold text-sm text-[var(--text-primary)]">Date & Time</th>
+                  <th className="px-6 py-3 text-left font-semibold text-sm text-[var(--text-primary)]">Group Size</th>
+                  <th className="px-6 py-3 text-left font-semibold text-sm text-[var(--text-primary)]">Status</th>
+                  <th className="px-6 py-3 text-left font-semibold text-sm text-[var(--text-primary)]">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {bookings.map((booking, i) => (
-                  <tr key={booking.id} className="border-b border-gray-200 hover:bg-gray-50">
+                  <tr key={booking.id} className="border-b border-[var(--border)] hover:bg-[var(--bg)] transition-colors">
                     <td className="px-6 py-4">
                       <div>
-                        <p className="font-semibold text-sm">{booking.name}</p>
-                        <p className="text-xs text-gray-500">{booking.email}</p>
-                        <p className="text-xs text-gray-500">{booking.phone}</p>
+                        <p className="font-semibold text-sm text-[var(--text-primary)]">{booking.name}</p>
+                        <p className="text-xs text-[var(--text-muted)]">{booking.email}</p>
+                        <p className="text-xs text-[var(--text-muted)]">{booking.phone}</p>
                       </div>
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex gap-1 flex-wrap">
                         {booking.spaces.map((space) => (
-                          <span key={space} className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                          <span key={space} className="text-xs bg-[var(--cta-primary)] bg-opacity-20 text-[var(--cta-primary)] px-2 py-1 rounded-full font-semibold">
                             {space}
                           </span>
                         ))}
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-sm">
+                    <td className="px-6 py-4 text-sm text-[var(--text-primary)]">
                       {booking.date} · {booking.time}
                     </td>
-                    <td className="px-6 py-4 text-sm">{booking.group_size} people</td>
+                    <td className="px-6 py-4 text-sm text-[var(--text-primary)]">{booking.group_size} people</td>
                     <td className="px-6 py-4">
                       <select
                         value={booking.status}
                         onChange={(e) => updateStatus(booking.id, e.target.value)}
-                        className={`text-xs px-3 py-1 rounded-full font-semibold cursor-pointer ${
+                        className={`text-xs px-3 py-1 rounded-full font-semibold cursor-pointer border border-[var(--border)] text-[var(--text-primary)] bg-[var(--bg)] focus:outline-none focus:ring-2 focus:ring-[var(--cta-primary)] ${
                           statusColors[booking.status]
                         }`}
                       >
@@ -223,12 +227,12 @@ export default function BookingsPage() {
                       </select>
                     </td>
                     <td className="px-6 py-4 flex gap-2">
-                      <button className="p-2 hover:bg-blue-100 rounded-soft text-blue-600">
+                      <button className="p-2 hover:bg-[var(--cta-primary)] hover:bg-opacity-20 rounded-lg text-[var(--cta-primary)] transition-colors">
                         <Edit2 size={16} />
                       </button>
                       <button
                         onClick={() => deleteBooking(booking.id)}
-                        className="p-2 hover:bg-red-100 rounded-soft text-red-600"
+                        className="p-2 hover:bg-red-100 dark:hover:bg-red-900 rounded-lg text-red-600 dark:text-red-400 transition-colors"
                       >
                         <Trash2 size={16} />
                       </button>

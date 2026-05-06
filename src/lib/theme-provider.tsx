@@ -52,7 +52,13 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 export function useTheme(): ThemeContextType {
   const context = useContext(ThemeContext)
   if (!context) {
-    throw new Error("useTheme must be used within a ThemeProvider")
+    // Return a safe default instead of throwing during SSR/hydration
+    return {
+      theme: "light",
+      toggleTheme: () => {
+        // No-op during SSR
+      }
+    }
   }
   return context
 }

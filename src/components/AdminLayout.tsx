@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { useRouter, usePathname } from "next/navigation"
 import { motion } from "framer-motion"
-import { LogOut, Menu, X, Home, Calendar, Grid, Settings, Moon, Sun, ChevronRight } from "lucide-react"
+import { LogOut, Menu, X, Home, Calendar, Grid, Settings, Moon, Sun, ChevronRight, Image } from "lucide-react"
 import Link from "next/link"
 import { useAuth } from "@/lib/auth-context"
 import { ThemeProvider, useTheme } from "@/lib/theme-provider"
@@ -12,15 +12,25 @@ import { ProtectedRoute } from "./ProtectedRoute"
 function AdminLayoutContent({ children }: { children: React.ReactNode }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [isClient, setIsClient] = useState(false)
+  const [mounted, setMounted] = useState(false)
+  const [theme, setTheme] = useState<'light' | 'dark'>('light')
+  const [toggleThemeFn, setToggleThemeFn] = useState<() => void>(() => {})
+  
   const router = useRouter()
   const pathname = usePathname()
   const { logout, user } = useAuth()
-  const { theme, toggleTheme } = useTheme()
+  const themeContext = useTheme()
 
   // Ensure hooks only run on client
   useEffect(() => {
     setIsClient(true)
-  }, [])
+    setMounted(true)
+    // Set theme from context after mount
+    if (themeContext) {
+      setTheme(themeContext.theme)
+      setToggleThemeFn(() => themeContext.toggleTheme)
+    }
+  }, [themeContext])
 
   const handleLogout = () => {
     logout()
@@ -31,7 +41,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
     { label: "Dashboard", href: "/admin", icon: Home },
     { label: "Bookings", href: "/admin/bookings", icon: Calendar },
     { label: "Spaces", href: "/admin/spaces", icon: Grid },
-    { label: "Gallery", href: "/admin/gallery", icon: Settings },
+    { label: "Gallery", href: "/admin/gallery", icon: Image },
     { label: "Settings", href: "/admin/settings", icon: Settings },
   ]
 
@@ -80,13 +90,13 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
 
             {/* Footer Controls */}
             <div className="border-t border-[var(--border)] p-4 space-y-2">
-              <button
-                onClick={toggleTheme}
-                className="w-full flex items-center gap-3 px-4 py-3 rounded-soft hover:bg-[var(--bg)] transition-colors font-body text-sm"
-              >
-                {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
-                <span>{theme === 'light' ? 'Dark Mode' : 'Light Mode'}</span>
-              </button>
+                <button
+                  onClick={toggleThemeFn}
+                  className="w-full flex items-center gap-3 px-4 py-3 rounded-soft hover:bg-[var(--bg)] transition-colors font-body text-sm"
+                >
+                  {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
+                  <span>{theme === 'light' ? 'Dark Mode' : 'Light Mode'}</span>
+                </button>
               <button
                 onClick={handleLogout}
                 className="w-full flex items-center gap-3 px-4 py-3 rounded-soft bg-[var(--cta-primary)] hover:bg-[var(--cta-hover)] transition-colors text-white font-body text-sm"
@@ -108,7 +118,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
 
               <div className="flex items-center gap-2">
                 <button
-                  onClick={toggleTheme}
+                  onClick={toggleThemeFn}
                   className="p-2 hover:bg-[var(--bg)] rounded-soft transition-colors"
                 >
                   {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
