@@ -48,58 +48,59 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
           <div className="flex-1 overflow-auto p-8 bg-[var(--bg)]">{children}</div>
         </div>
       ) : (
-        <div className="flex flex-col h-screen bg-[var(--bg)] text-[var(--text-primary)]">
-          {/* DESKTOP NAVIGATION */}
-          <div className="hidden md:flex items-center justify-between px-8 py-4 bg-[var(--surface)] border-b border-[var(--border)] shadow-sm gap-8">
-            <div className="flex-shrink-0">
+        <div className="flex h-screen bg-[var(--bg)] text-[var(--text-primary)]">
+          {/* DESKTOP SIDEBAR - Only visible on md+ screens */}
+          <aside className="hidden md:flex flex-col w-64 bg-[var(--surface)] border-r border-[var(--border)] shadow-sm">
+            {/* Logo */}
+            <div className="p-6 border-b border-[var(--border)]">
               <h1 className="font-display text-2xl font-bold text-[var(--text-primary)]">Infinite</h1>
-              <p className="font-body text-xs text-[var(--text-muted)]">Admin Suite</p>
+              <p className="font-body text-xs text-[var(--text-muted)] mt-1">Admin Suite</p>
             </div>
 
-            {/* Desktop Nav Items */}
-            <nav className="flex items-center gap-2 flex-1 justify-center">
+            {/* Nav Items */}
+            <nav className="flex-1 overflow-y-auto p-4 space-y-2">
               {navItems.map((item) => {
                 const Icon = item.icon
                 return (
                   <Link
                     key={item.href}
                     href={item.href}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-soft transition-all font-body text-sm whitespace-nowrap ${
+                    className={`flex items-center gap-3 px-4 py-3 rounded-soft transition-all font-body text-sm ${
                       isActive(item.href)
                         ? "bg-[var(--cta-primary)] text-white"
                         : "text-[var(--text-primary)] hover:bg-[var(--bg)]"
                     }`}
                   >
-                    <Icon size={16} />
+                    <Icon size={18} />
                     <span>{item.label}</span>
                   </Link>
                 )
               })}
             </nav>
 
-            {/* Desktop Controls */}
-            <div className="flex items-center gap-3 flex-shrink-0">
+            {/* Footer Controls */}
+            <div className="border-t border-[var(--border)] p-4 space-y-2">
               <button
                 onClick={toggleTheme}
-                className="p-2 hover:bg-[var(--bg)] rounded-soft transition-colors"
-                title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-soft hover:bg-[var(--bg)] transition-colors font-body text-sm"
               >
                 {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
+                <span>{theme === 'light' ? 'Dark Mode' : 'Light Mode'}</span>
               </button>
               <button
                 onClick={handleLogout}
-                className="flex items-center gap-2 px-4 py-2 rounded-soft bg-[var(--cta-primary)] hover:bg-[var(--cta-hover)] transition-colors text-white font-body text-sm"
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-soft bg-[var(--cta-primary)] hover:bg-[var(--cta-hover)] transition-colors text-white font-body text-sm"
               >
-                <LogOut size={16} />
+                <LogOut size={18} />
                 <span>Logout</span>
               </button>
             </div>
-          </div>
+          </aside>
 
-          {/* MOBILE NAVIGATION */}
-          <div className="md:hidden bg-[var(--surface)] border-b border-[var(--border)] shadow-sm">
+          {/* MOBILE HEADER + CONTENT - Only visible on mobile */}
+          <div className="flex flex-col flex-1 md:hidden">
             {/* Mobile Header */}
-            <div className="flex items-center justify-between px-4 py-3">
+            <div className="flex items-center justify-between px-4 py-3 bg-[var(--surface)] border-b border-[var(--border)] shadow-sm">
               <div>
                 <h1 className="font-display text-lg font-bold text-[var(--text-primary)]">Infinite</h1>
                 <p className="font-body text-xs text-[var(--text-muted)]">{currentPage.label}</p>
@@ -128,7 +129,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
-                className="border-t border-[var(--border)] bg-[var(--surface)] px-4 py-3 space-y-2 z-50 shadow-lg max-h-96 overflow-y-auto"
+                className="border-b border-[var(--border)] bg-[var(--surface)] px-4 py-3 space-y-2 z-50 shadow-lg max-h-96 overflow-y-auto"
               >
                 {navItems.map((item) => {
                   const Icon = item.icon
@@ -161,15 +162,21 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
                 </button>
               </motion.div>
             )}
+
+            {/* Mobile Content */}
+            <div className="flex-1 overflow-auto p-4 bg-[var(--bg)]">{children}</div>
           </div>
 
-        {/* Page Title & Welcome */}
-        <div className="hidden md:block bg-[var(--surface)] border-b border-[var(--border)] px-8 py-3 shadow-sm">
-          <p className="font-body text-sm text-[var(--text-muted)]">Welcome back, <span className="text-[var(--text-primary)] font-semibold">{user?.name || 'Admin'}</span></p>
-        </div>
+          {/* DESKTOP CONTENT */}
+          <div className="hidden md:flex flex-col flex-1">
+            {/* Welcome Bar */}
+            <div className="bg-[var(--surface)] border-b border-[var(--border)] px-8 py-3 shadow-sm">
+              <p className="font-body text-sm text-[var(--text-muted)]">Welcome back, <span className="text-[var(--text-primary)] font-semibold">{user?.name || 'Admin'}</span></p>
+            </div>
 
-        {/* Main Content */}
-        <div className="flex-1 overflow-auto p-4 md:p-8 bg-[var(--bg)]">{children}</div>
+            {/* Main Content */}
+            <div className="flex-1 overflow-auto p-8 bg-[var(--bg)]">{children}</div>
+          </div>
         </div>
       )}
     </ProtectedRoute>
