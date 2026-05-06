@@ -6,10 +6,10 @@ import { motion } from "framer-motion"
 import { LogOut, Menu, X, Home, Calendar, Grid, Settings, Moon, Sun } from "lucide-react"
 import Link from "next/link"
 import { useAuth } from "@/lib/auth-context"
-import { useTheme } from "@/lib/theme-provider"
+import { ThemeProvider, useTheme } from "@/lib/theme-provider"
 import { ProtectedRoute } from "./ProtectedRoute"
 
-export function AdminLayout({ children }: { children: React.ReactNode }) {
+function AdminLayoutContent({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [showThemeMenu, setShowThemeMenu] = useState(false)
   const router = useRouter()
@@ -101,5 +101,13 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
         </div>
       </div>
     </ProtectedRoute>
+  )
+}
+
+export function AdminLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <ThemeProvider>
+      <AdminLayoutContent>{children}</AdminLayoutContent>
+    </ThemeProvider>
   )
 }

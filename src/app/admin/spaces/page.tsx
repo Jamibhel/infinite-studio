@@ -58,16 +58,6 @@ export default function SpacesPage() {
         return
       }
 
-      // Check if bucket exists first
-      const { data: buckets } = await supabase.storage.listBuckets()
-      const spaceImagesBucket = buckets?.find(b => b.name === 'space-images')
-      
-      if (!spaceImagesBucket) {
-        toast.error("Storage bucket 'space-images' not found. Please contact your administrator.")
-        console.error("Bucket 'space-images' does not exist. Available buckets:", buckets?.map(b => b.name))
-        return
-      }
-
       const fileExt = file.name.split(".").pop()
       const fileName = `${spaceId}-${Date.now()}.${fileExt}`
       const filePath = `spaces/${fileName}`
@@ -80,7 +70,7 @@ export default function SpacesPage() {
 
       if (uploadError) {
         console.error("Upload error details:", uploadError)
-        throw new Error(`Upload failed: ${uploadError.message}`)
+        throw uploadError
       }
 
       console.log("Upload successful:", uploadData)
