@@ -153,24 +153,38 @@ INSERT INTO bookings (name, email, phone, spaces, preferred_date, preferred_time
 -- SELECT COUNT(*) as pending_count FROM bookings WHERE status = 'pending';
 
 -- ============================================
--- 8. STORAGE BUCKET SETUP
+-- 8. STORAGE BUCKET SETUP - RLS POLICIES
 -- ============================================
 -- Go to Storage in Supabase Console
--- 1. Create new bucket named: studio-media
+-- 1. Create new bucket named: space-images
 -- 2. Set as Public
--- 3. Set policy to allow authenticated uploads
+-- 3. Run the RLS policies below in SQL Editor
 
--- SQL for storage policy (if needed):
--- CREATE POLICY "Allow authenticated uploads"
--- ON storage.objects
--- FOR INSERT TO authenticated
--- USING (bucket_id = 'studio-media');
+-- Drop existing policies if any exist
+DROP POLICY IF EXISTS "Public read access" ON storage.objects;
+DROP POLICY IF EXISTS "Authenticated uploads" ON storage.objects;
+DROP POLICY IF EXISTS "Authenticated delete" ON storage.objects;
+DROP POLICY IF EXISTS "Public read" ON storage.objects;
+DROP POLICY IF EXISTS "Authenticated upload" ON storage.objects;
 
--- CREATE POLICY "Allow public read"
--- ON storage.objects
--- FOR SELECT
--- USING (bucket_id = 'studio-media');
+-- Enable RLS on storage.objects table
+ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
+
+-- Policy 1: Allow anyone to READ images from space-images bucket
+CREATE POLICY "Public read"
+ON storage.objects FOR SELECT
+USING (bucket_id = 'space-images');
+
+-- Policy 2: Allow authenticated users to UPLOAD to space-images bucket
+CREATE POLICY "Authenticated upload"
+ON storage.objects FOR INSERT
+WITH CHECK (bucket_id = 'space-images');
+
+-- Policy 3: Allow authenticated users to DELETE from space-images bucket
+CREATE POLICY "Authenticated delete"
+ON storage.objects FOR DELETE
+USING (bucket_id = 'space-images');
 
 -- ============================================
--- DONE! Your database is ready to use.
+-- DONE! Your database and storage are ready to use.
 -- ============================================
