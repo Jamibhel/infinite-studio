@@ -4,7 +4,7 @@
 -- ============================================
 -- 1. BOOKINGS TABLE
 -- ============================================
-CREATE TABLE bookings (
+CREATE TABLE IF NOT EXISTS bookings (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW()),
   name TEXT NOT NULL,
@@ -20,14 +20,14 @@ CREATE TABLE bookings (
 );
 
 -- Create index on email for faster lookups
-CREATE INDEX idx_bookings_email ON bookings(email);
-CREATE INDEX idx_bookings_status ON bookings(status);
-CREATE INDEX idx_bookings_date ON bookings(preferred_date);
+CREATE INDEX IF NOT EXISTS idx_bookings_email ON bookings(email);
+CREATE INDEX IF NOT EXISTS idx_bookings_status ON bookings(status);
+CREATE INDEX IF NOT EXISTS idx_bookings_date ON bookings(preferred_date);
 
 -- ============================================
 -- 2. SPACES TABLE
 -- ============================================
-CREATE TABLE spaces (
+CREATE TABLE IF NOT EXISTS spaces (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   name TEXT NOT NULL UNIQUE,
   mood_tag TEXT NOT NULL,
@@ -42,20 +42,20 @@ CREATE TABLE spaces (
 );
 
 -- Create index on active status for faster queries
-CREATE INDEX idx_spaces_active ON spaces(is_active);
-CREATE INDEX idx_spaces_sort ON spaces(sort_order);
+CREATE INDEX IF NOT EXISTS idx_spaces_active ON spaces(is_active);
+CREATE INDEX IF NOT EXISTS idx_spaces_sort ON spaces(sort_order);
 
 -- ============================================
 -- 3. SITE CONFIG TABLE
 -- ============================================
-CREATE TABLE site_config (
+CREATE TABLE IF NOT EXISTS site_config (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   key TEXT UNIQUE NOT NULL,
   value TEXT NOT NULL,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW())
 );
 
--- Insert default config values
+-- Insert default config values (if not already present)
 INSERT INTO site_config (key, value) VALUES
   ('marquee_text', 'Editorial · Cinematic · Lifestyle · Corporate · Fashion · Beauty'),
   ('studio_phone', '+234 700 0000 000'),
@@ -66,7 +66,8 @@ INSERT INTO site_config (key, value) VALUES
   ('bookings_enabled', 'true'),
   ('gallery_enabled', 'true'),
   ('spaces_enabled', 'true'),
-  ('whatsapp_chat_enabled', 'true');
+  ('whatsapp_chat_enabled', 'true')
+ON CONFLICT (key) DO NOTHING;
 
 -- ============================================
 -- 4. ENABLE ROW LEVEL SECURITY
@@ -79,43 +80,40 @@ ALTER TABLE site_config ENABLE ROW LEVEL SECURITY;
 -- 5. ROW LEVEL SECURITY POLICIES
 -- ============================================
 
--- BOOKINGS: Anyone can create, read their own, admins read all
+-- BOOKINGS: Anyone can create, anyone can read, anyone can update
+DROP POLICY IF EXISTS "Anyone can create bookings" ON bookings;
 CREATE POLICY "Anyone can create bookings"
 ON bookings FOR INSERT WITH CHECK (true);
 
-CREATE POLICY "Users can read own bookings"
-ON bookings FOR SELECT USING (
-  auth.jwt() ->> 'email' = email OR
-  (SELECT role FROM auth.users WHERE id = auth.uid()) = 'admin'
-);
+DROP POLICY IF EXISTS "Users can read own bookings" ON bookings;
+CREATE POLICY "Anyone can read bookings"
+ON bookings FOR SELECT USING (true);
 
-CREATE POLICY "Only admins can update bookings"
-ON bookings FOR UPDATE USING (
-  (SELECT role FROM auth.users WHERE id = auth.uid()) = 'admin'
-);
+DROP POLICY IF EXISTS "Only admins can update bookings" ON bookings;
+CREATE POLICY "Anyone can update bookings"
+ON bookings FOR UPDATE USING (true);
 
--- SPACES: Public read access
-CREATE POLICY "Public can read active spaces"
-ON spaces FOR SELECT USING (is_active = true);
+-- SPACES: Public read access, authenticated users can insert/update
+DROP POLICY IF EXISTS "Public can read active spaces" ON spaces;
+CREATE POLICY "Anyone can read spaces"
+ON spaces FOR SELECT USING (true);
 
-CREATE POLICY "Only admins can insert spaces"
-ON spaces FOR INSERT WITH CHECK (
-  (SELECT role FROM auth.users WHERE id = auth.uid()) = 'admin'
-);
+DROP POLICY IF EXISTS "Only admins can insert spaces" ON spaces;
+CREATE POLICY "Authenticated users can insert spaces"
+ON spaces FOR INSERT WITH CHECK (auth.role() = 'authenticated');
 
-CREATE POLICY "Only admins can update spaces"
-ON spaces FOR UPDATE USING (
-  (SELECT role FROM auth.users WHERE id = auth.uid()) = 'admin'
-);
+DROP POLICY IF EXISTS "Only admins can update spaces" ON spaces;
+CREATE POLICY "Authenticated users can update spaces"
+ON spaces FOR UPDATE USING (auth.role() = 'authenticated');
 
--- SITE CONFIG: Public read access
-CREATE POLICY "Public can read site config"
+-- SITE CONFIG: Public read access, authenticated users can update
+DROP POLICY IF EXISTS "Public can read site config" ON site_config;
+CREATE POLICY "Anyone can read site config"
 ON site_config FOR SELECT USING (true);
 
-CREATE POLICY "Only admins can update config"
-ON site_config FOR UPDATE USING (
-  (SELECT role FROM auth.users WHERE id = auth.uid()) = 'admin'
-);
+DROP POLICY IF EXISTS "Only admins can update config" ON site_config;
+CREATE POLICY "Authenticated users can update config"
+ON site_config FOR UPDATE USING (auth.role() = 'authenticated');
 
 -- ============================================
 -- 6. INSERT SAMPLE DATA (OPTIONAL)
@@ -166,6 +164,7 @@ DROP POLICY IF EXISTS "Authenticated uploads" ON storage.objects;
 DROP POLICY IF EXISTS "Authenticated delete" ON storage.objects;
 DROP POLICY IF EXISTS "Public read" ON storage.objects;
 DROP POLICY IF EXISTS "Authenticated upload" ON storage.objects;
+DROP POLICY IF EXISTS "Authenticated delete" ON storage.objects;
 
 -- Enable RLS on storage.objects table
 ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
@@ -175,13 +174,13 @@ CREATE POLICY "Public read"
 ON storage.objects FOR SELECT
 USING (bucket_id = 'space-images');
 
--- Policy 2: Allow authenticated users to UPLOAD to space-images bucket
-CREATE POLICY "Authenticated upload"
+-- Policy 2: Allow anyone to UPLOAD to space-images bucket (for demo)
+CREATE POLICY "Anyone can upload"
 ON storage.objects FOR INSERT
 WITH CHECK (bucket_id = 'space-images');
 
--- Policy 3: Allow authenticated users to DELETE from space-images bucket
-CREATE POLICY "Authenticated delete"
+-- Policy 3: Allow anyone to DELETE from space-images bucket (for demo)
+CREATE POLICY "Anyone can delete"
 ON storage.objects FOR DELETE
 USING (bucket_id = 'space-images');
 
