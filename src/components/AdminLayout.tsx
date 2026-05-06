@@ -50,35 +50,35 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
       ) : (
         <div className="flex flex-col h-screen bg-[var(--bg)] text-[var(--text-primary)]">
           {/* DESKTOP NAVIGATION */}
-          <div className="hidden md:flex items-center justify-between px-8 py-4 bg-[var(--surface)] border-b border-[var(--border)] shadow-sm">
-            <div>
+          <div className="hidden md:flex items-center justify-between px-8 py-4 bg-[var(--surface)] border-b border-[var(--border)] shadow-sm gap-8">
+            <div className="flex-shrink-0">
               <h1 className="font-display text-2xl font-bold text-[var(--text-primary)]">Infinite</h1>
               <p className="font-body text-xs text-[var(--text-muted)]">Admin Suite</p>
             </div>
 
             {/* Desktop Nav Items */}
-            <nav className="flex items-center gap-1">
+            <nav className="flex items-center gap-2 flex-1 justify-center">
               {navItems.map((item) => {
                 const Icon = item.icon
                 return (
                   <Link
                     key={item.href}
                     href={item.href}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-soft transition-all font-body text-sm ${
+                    className={`flex items-center gap-2 px-4 py-2 rounded-soft transition-all font-body text-sm whitespace-nowrap ${
                       isActive(item.href)
                         ? "bg-[var(--cta-primary)] text-white"
                         : "text-[var(--text-primary)] hover:bg-[var(--bg)]"
                     }`}
                   >
                     <Icon size={16} />
-                    {item.label}
+                    <span>{item.label}</span>
                   </Link>
                 )
               })}
             </nav>
 
             {/* Desktop Controls */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-shrink-0">
               <button
                 onClick={toggleTheme}
                 className="p-2 hover:bg-[var(--bg)] rounded-soft transition-colors"
