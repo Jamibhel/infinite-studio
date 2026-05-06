@@ -50,11 +50,53 @@ export default function SpacesPage() {
   const [editMode, setEditMode] = useState(false)
   const [formData, setFormData] = useState<Partial<Space>>({})
   const [stats, setStats] = useState<Record<string, SpaceStats>>({})
+  const [uploading, setUploading] = useState(false)
 
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL || "",
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ""
   )
+
+  const uploadSpaceImage = async (file: File, spaceId: string) => {
+    try {
+      setUploading(true)
+      const fileExt = file.name.split(".").pop()
+      const fileName = `${spaceId}-${Date.now()}.${fileExt}`
+      const filePath = `spaces/${fileName}`
+
+      const { error: uploadError } = await supabase.storage
+        .from("space-images")
+        .upload(filePath, file, { upsert: true })
+
+      if (uploadError) throw uploadError
+
+      // Get public URL
+      const { data } = supabase.storage
+        .from("space-images")
+        .getPublicUrl(filePath)
+
+      const publicUrl = data.publicUrl
+
+      // Add to formData images
+      const currentImages = formData.images || []
+      setFormData({
+        ...formData,
+        images: [...currentImages, publicUrl],
+      })
+
+      toast.success("Image uploaded successfully")
+    } catch (err) {
+      console.error("Error uploading image:", err)
+      toast.error("Failed to upload image")
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  const removeImage = (index: number) => {
+    const updatedImages = (formData.images || []).filter((_, i) => i !== index)
+    setFormData({ ...formData, images: updatedImages })
+  }
 
   useEffect(() => {
     fetchSpaces()
@@ -405,6 +447,79 @@ export default function SpacesPage() {
               </div>
 
               <div className="p-6 space-y-6">
+                {/* Image Gallery */}
+                <div className="space-y-4">
+                  <h3 className="font-semibold text-lg">Space Images</h3>
+                  
+                  {/* Current Images */}
+                  {(formData.images || []).length > 0 && (
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                      {(formData.images || []).map((image, idx) => (
+                        <div key={idx} className="relative group">
+                          <img
+                            src={image}
+                            alt={`Space ${idx + 1}`}
+                            className="w-full h-32 object-cover rounded-lg"
+                          />
+                          {editMode && (
+                            <button
+                              onClick={() => removeImage(idx)}
+                              className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition"
+                            >
+                              <X size={16} />
+                            </button>
+                          )}
+                          {idx === 0 && (
+                            <div className="absolute top-1 left-1 bg-blue-500 text-white px-2 py-1 rounded text-xs font-semibold">
+                              Primary
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Upload Area */}
+                  {editMode && (
+                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-500 transition">
+                      <label className="cursor-pointer block">
+                        <div className="flex flex-col items-center gap-2">
+                          <Camera size={32} className="text-gray-400" />
+                          <div>
+                            <p className="text-sm font-medium text-gray-700">Click to upload images</p>
+                            <p className="text-xs text-gray-500">PNG, JPG, WebP up to 5MB</p>
+                          </div>
+                        </div>
+                        <input
+                          type="file"
+                          multiple
+                          accept="image/*"
+                          disabled={uploading}
+                          onChange={(e) => {
+                            const files = e.currentTarget.files
+                            if (files) {
+                              Array.from(files).forEach((file) => {
+                                if (file.size > 5 * 1024 * 1024) {
+                                  toast.error("File too large. Maximum 5MB.")
+                                  return
+                                }
+                                uploadSpaceImage(file, selectedSpace?.id || "")
+                              })
+                            }
+                          }}
+                          className="hidden"
+                        />
+                      </label>
+                      {uploading && (
+                        <div className="mt-2 flex items-center justify-center gap-2">
+                          <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-500 border-t-transparent" />
+                          <span className="text-sm text-blue-600">Uploading...</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
                 {/* Basic Info */}
                 <div className="space-y-4">
                   <h3 className="font-semibold text-lg">Basic Information</h3>
