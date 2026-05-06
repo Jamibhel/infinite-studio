@@ -226,6 +226,7 @@ export default function SpacesPage() {
           capacity: formData.capacity,
           pricing_tiers: formData.pricing_tiers,
           amenities: formData.amenities,
+          images: formData.images,
         })
         .eq("id", selectedSpace.id)
 
@@ -613,19 +614,112 @@ export default function SpacesPage() {
 
                 {/* Pricing */}
                 <div className="space-y-4">
-                  <h3 className="font-semibold text-lg">Pricing Tiers</h3>
-                  <div className="space-y-3">
-                    {(formData.pricing_tiers || []).length === 0 ? (
-                      <p className="text-sm text-gray-500">No pricing tiers configured</p>
-                    ) : (
-                      (formData.pricing_tiers || []).map((tier, idx) => (
-                        <div key={idx} className="p-3 bg-gray-50 rounded-lg">
-                          <p className="font-semibold">{tier.name}</p>
-                          <p className="text-sm text-gray-600">Hourly: ₦{tier.hourly_rate} | Daily: ₦{tier.daily_rate}</p>
-                        </div>
-                      ))
+                  <div className="flex justify-between items-center">
+                    <h3 className="font-semibold text-lg">Pricing Tiers</h3>
+                    {editMode && (
+                      <button
+                        onClick={() => {
+                          const newTier: PricingTier = {
+                            id: `tier-${Date.now()}`,
+                            name: "New Tier",
+                            hourly_rate: 0,
+                            daily_rate: 0,
+                            description: "",
+                          }
+                          setFormData({
+                            ...formData,
+                            pricing_tiers: [...(formData.pricing_tiers || []), newTier],
+                          })
+                        }}
+                        className="px-3 py-1 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition"
+                      >
+                        Add Tier
+                      </button>
                     )}
                   </div>
+
+                  {(formData.pricing_tiers || []).length === 0 ? (
+                    <p className="text-sm text-gray-500">No pricing tiers configured</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {(formData.pricing_tiers || []).map((tier, idx) => (
+                        <div key={idx} className={`p-4 border rounded-lg ${editMode ? "border-blue-300 bg-blue-50" : "border-gray-200 bg-gray-50"}`}>
+                          <div className="grid md:grid-cols-2 gap-3 mb-3">
+                            <div>
+                              <label className="text-xs font-semibold text-gray-600">Tier Name</label>
+                              <input
+                                type="text"
+                                value={tier.name}
+                                onChange={(e) => {
+                                  const updated = [...(formData.pricing_tiers || [])]
+                                  updated[idx].name = e.target.value
+                                  setFormData({ ...formData, pricing_tiers: updated })
+                                }}
+                                disabled={!editMode}
+                                className="w-full text-sm px-2 py-1 border border-gray-300 rounded mt-1 disabled:bg-white"
+                              />
+                            </div>
+                            <div>
+                              <label className="text-xs font-semibold text-gray-600">Description</label>
+                              <input
+                                type="text"
+                                value={tier.description}
+                                onChange={(e) => {
+                                  const updated = [...(formData.pricing_tiers || [])]
+                                  updated[idx].description = e.target.value
+                                  setFormData({ ...formData, pricing_tiers: updated })
+                                }}
+                                disabled={!editMode}
+                                placeholder="e.g., Popular choice"
+                                className="w-full text-sm px-2 py-1 border border-gray-300 rounded mt-1 disabled:bg-white"
+                              />
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <label className="text-xs font-semibold text-gray-600">Hourly Rate (₦)</label>
+                              <input
+                                type="number"
+                                value={tier.hourly_rate}
+                                onChange={(e) => {
+                                  const updated = [...(formData.pricing_tiers || [])]
+                                  updated[idx].hourly_rate = parseInt(e.target.value) || 0
+                                  setFormData({ ...formData, pricing_tiers: updated })
+                                }}
+                                disabled={!editMode}
+                                className="w-full text-sm px-2 py-1 border border-gray-300 rounded mt-1 disabled:bg-white"
+                              />
+                            </div>
+                            <div>
+                              <label className="text-xs font-semibold text-gray-600">Daily Rate (₦)</label>
+                              <input
+                                type="number"
+                                value={tier.daily_rate}
+                                onChange={(e) => {
+                                  const updated = [...(formData.pricing_tiers || [])]
+                                  updated[idx].daily_rate = parseInt(e.target.value) || 0
+                                  setFormData({ ...formData, pricing_tiers: updated })
+                                }}
+                                disabled={!editMode}
+                                className="w-full text-sm px-2 py-1 border border-gray-300 rounded mt-1 disabled:bg-white"
+                              />
+                            </div>
+                          </div>
+                          {editMode && (
+                            <button
+                              onClick={() => {
+                                const updated = (formData.pricing_tiers || []).filter((_, i) => i !== idx)
+                                setFormData({ ...formData, pricing_tiers: updated })
+                              }}
+                              className="mt-3 text-xs text-red-600 hover:text-red-700 font-semibold"
+                            >
+                              Remove Tier
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 {/* Stats */}
