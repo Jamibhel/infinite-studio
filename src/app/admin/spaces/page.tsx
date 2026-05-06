@@ -246,75 +246,101 @@ export default function SpacesPage() {
                 key={space.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-white rounded-soft border border-gray-200 p-6 hover:shadow-lg transition"
+                className="bg-white rounded-soft border border-gray-200 overflow-hidden hover:shadow-xl transition-all"
               >
-                <div className="flex justify-between items-start mb-4">
-                  <div>
-                    <h3 className="font-display text-xl font-bold">{space.name}</h3>
-                    <p className="text-sm text-gray-600 font-body">{space.mood_tag}</p>
-                    <p className="text-xs text-gray-500 mt-2 line-clamp-2">{space.description}</p>
+                {/* Card Header with Image */}
+                <div className="relative h-48 bg-gradient-to-br from-blue-500 to-purple-600 overflow-hidden">
+                  {space.images && space.images.length > 0 ? (
+                    <img 
+                      src={space.images[0]} 
+                      alt={space.name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <Camera size={48} className="text-white opacity-50" />
+                    </div>
+                  )}
+                  <div className="absolute top-3 right-3">
+                    <button
+                      onClick={() => toggleActive(space.id, space.is_active)}
+                      className={`px-3 py-1 rounded-full text-xs font-semibold transition ${
+                        space.is_active
+                          ? "bg-green-100 text-green-800"
+                          : "bg-red-100 text-red-800"
+                      }`}
+                    >
+                      {space.is_active ? "Active" : "Inactive"}
+                    </button>
                   </div>
-                  <button
-                    onClick={() => toggleActive(space.id, space.is_active)}
-                    className={`px-3 py-1 rounded-full text-xs font-semibold transition ${
-                      space.is_active
-                        ? "bg-green-100 text-green-800 hover:bg-green-200"
-                        : "bg-gray-100 text-gray-800 hover:bg-gray-200"
-                    }`}
-                  >
-                    {space.is_active ? "Active" : "Inactive"}
-                  </button>
                 </div>
 
-                {/* Stats */}
-                {space.stats && (
-                  <div className="grid grid-cols-3 gap-2 mb-4 p-3 bg-gray-50 rounded-lg">
-                    <div className="text-center">
-                      <p className="text-xs text-gray-600">Bookings</p>
-                      <p className="text-lg font-bold">{space.stats.total_bookings}</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-xs text-gray-600">Revenue</p>
-                      <p className="text-lg font-bold">₦{(space.stats.total_revenue / 1000).toFixed(0)}K</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-xs text-gray-600">Occupancy</p>
-                      <p className="text-lg font-bold">{Math.round(space.stats.occupancy_rate)}%</p>
-                    </div>
+                {/* Card Body */}
+                <div className="p-5 space-y-4">
+                  {/* Title & Description */}
+                  <div>
+                    <h3 className="font-display text-xl font-bold text-gray-900">{space.name}</h3>
+                    <p className="text-sm font-medium text-blue-600 mb-1">{space.mood_tag}</p>
+                    <p className="text-xs text-gray-600 line-clamp-2">{space.description}</p>
+                    {space.capacity && (
+                      <p className="text-xs text-gray-500 mt-1">Capacity: {space.capacity} people</p>
+                    )}
                   </div>
-                )}
 
-                {/* Amenities */}
-                {space.amenities && space.amenities.length > 0 && (
-                  <div className="mb-4 pb-4 border-b border-gray-200">
-                    <p className="text-xs font-semibold text-gray-600 mb-2">Amenities</p>
-                    <div className="flex gap-1 flex-wrap">
-                      {space.amenities.map((amenity) => (
-                        <span key={amenity} className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                          {amenity}
-                        </span>
-                      ))}
+                  {/* Stats Grid */}
+                  {space.stats && (
+                    <div className="grid grid-cols-3 gap-2 p-3 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg">
+                      <div className="text-center">
+                        <p className="text-xs text-gray-600 font-medium">Bookings</p>
+                        <p className="text-lg font-bold text-blue-600">{space.stats.total_bookings}</p>
+                      </div>
+                      <div className="text-center border-l border-r border-gray-300">
+                        <p className="text-xs text-gray-600 font-medium">Revenue</p>
+                        <p className="text-lg font-bold text-purple-600">₦{(space.stats.total_revenue / 1000).toFixed(0)}K</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-xs text-gray-600 font-medium">Occupancy</p>
+                        <p className="text-lg font-bold text-green-600">{Math.round(space.stats.occupancy_rate)}%</p>
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
 
-                <div className="flex gap-2">
-                  <button 
-                    onClick={() => openEditModal(space)}
-                    className="flex-1 flex items-center justify-center gap-2 p-2 hover:bg-blue-100 rounded-soft text-blue-600 font-body text-sm transition">
-                    <Edit2 size={16} />
-                    Edit
-                  </button>
-                  <button className="flex-1 flex items-center justify-center gap-2 p-2 hover:bg-gray-100 rounded-soft text-gray-600 font-body text-sm transition">
-                    <Eye size={16} />
-                    Preview
-                  </button>
-                  <button
-                    onClick={() => deleteSpace(space.id)}
-                    className="flex-1 flex items-center justify-center gap-2 p-2 hover:bg-red-100 rounded-soft text-red-600 font-body text-sm transition"
-                  >
-                    <Trash2 size={16} />
-                  </button>
+                  {/* Amenities */}
+                  {space.amenities && space.amenities.length > 0 && (
+                    <div className="space-y-2 pb-3 border-b border-gray-200">
+                      <p className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Amenities</p>
+                      <div className="flex gap-1 flex-wrap">
+                        {space.amenities.slice(0, 4).map((amenity) => (
+                          <span key={amenity} className="text-xs bg-blue-100 text-blue-800 px-2.5 py-1 rounded-full font-medium">
+                            {amenity}
+                          </span>
+                        ))}
+                        {space.amenities.length > 4 && (
+                          <span className="text-xs bg-gray-100 text-gray-700 px-2.5 py-1 rounded-full font-medium">
+                            +{space.amenities.length - 4} more
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Action Buttons */}
+                  <div className="flex gap-2 pt-2">
+                    <button 
+                      onClick={() => openEditModal(space)}
+                      className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium text-sm"
+                    >
+                      <Edit2 size={16} />
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => deleteSpace(space.id)}
+                      className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition font-medium text-sm"
+                    >
+                      <Trash2 size={16} />
+                      Delete
+                    </button>
+                  </div>
                 </div>
               </motion.div>
             ))}
@@ -334,13 +360,48 @@ export default function SpacesPage() {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+              className="bg-white rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-2xl"
             >
-              <div className="sticky top-0 bg-white border-b border-gray-200 p-6 flex justify-between items-center">
-                <h2 className="text-2xl font-bold">{editMode ? "Edit Space" : "View Space"}</h2>
-                <button onClick={closeModal} className="text-gray-400 hover:text-gray-600">
-                  <X size={24} />
-                </button>
+              {/* Modal Header with Image */}
+              <div className="sticky top-0 bg-white border-b border-gray-200 z-10">
+                <div className="relative h-40 bg-gradient-to-br from-blue-500 to-purple-600 overflow-hidden">
+                  {selectedSpace.images && selectedSpace.images.length > 0 ? (
+                    <img 
+                      src={selectedSpace.images[0]} 
+                      alt={selectedSpace.name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <Camera size={64} className="text-white opacity-30" />
+                    </div>
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
+                  <button 
+                    onClick={closeModal} 
+                    className="absolute top-4 right-4 bg-white/90 hover:bg-white text-gray-800 rounded-full p-2 transition"
+                  >
+                    <X size={24} />
+                  </button>
+                </div>
+
+                <div className="px-6 py-4 border-b border-gray-200">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h2 className="text-3xl font-bold text-gray-900">{selectedSpace.name}</h2>
+                      <p className="text-blue-600 font-medium mt-1">{selectedSpace.mood_tag}</p>
+                    </div>
+                    {editMode ? (
+                      <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-semibold">
+                        Editing
+                      </span>
+                    ) : (
+                      <span className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm font-semibold">
+                        View Mode
+                      </span>
+                    )}
+                  </div>
+                </div>
               </div>
 
               <div className="p-6 space-y-6">
