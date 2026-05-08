@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter, usePathname } from "next/navigation"
-import { motion } from "framer-motion"
+import { motion, AnimatePresence } from "framer-motion"
 import { LogOut, Menu, X, Home, Calendar, Grid, Settings, Moon, Sun, ChevronRight, Image } from "lucide-react"
 import Link from "next/link"
 import { useAuth } from "@/lib/auth-context"
@@ -124,44 +124,57 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
             </div>
 
             {/* Mobile Dropdown Menu */}
-            {mobileMenuOpen && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                className="border-b border-[var(--border)] bg-[var(--surface)] px-4 py-3 space-y-2 z-50 shadow-lg max-h-96 overflow-y-auto"
-              >
-                {navItems.map((item) => {
-                  const Icon = item.icon
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      onClick={() => setMobileMenuOpen(false)}
-                      className={`flex items-center justify-between px-4 py-3 rounded-soft transition-all font-body text-sm ${
-                        isActive(item.href)
-                          ? "bg-[var(--cta-primary)] text-white"
-                          : "text-[var(--text-primary)] hover:bg-[var(--bg)]"
-                      }`}
-                    >
-                      <span className="flex items-center gap-3">
-                        <Icon size={16} />
-                        {item.label}
-                      </span>
-                      <ChevronRight size={16} />
-                    </Link>
-                  )
-                })}
-
-                <button
-                  onClick={handleLogout}
-                  className="w-full flex items-center gap-2 px-4 py-3 rounded-soft bg-[var(--cta-primary)] hover:bg-[var(--cta-hover)] transition-colors text-white font-body text-sm mt-2"
+            <AnimatePresence>
+              {mobileMenuOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10, height: 0 }}
+                  animate={{ opacity: 1, y: 0, height: "auto" }}
+                  exit={{ opacity: 0, y: -10, height: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="border-b border-[var(--border)] bg-[var(--surface)] px-4 py-3 space-y-2 z-50 shadow-lg max-h-96 overflow-y-auto"
                 >
-                  <LogOut size={16} />
-                  <span>Logout</span>
-                </button>
-              </motion.div>
-            )}
+                  {navItems.map((item) => {
+                    const Icon = item.icon
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        onClick={() => setMobileMenuOpen(false)}
+                        className={`flex items-center justify-between px-4 py-3 rounded-soft transition-all font-body text-sm ${
+                          isActive(item.href)
+                            ? "bg-[var(--cta-primary)] text-white"
+                            : "text-[var(--text-primary)] hover:bg-[var(--bg)]"
+                        }`}
+                      >
+                        <span className="flex items-center gap-3">
+                          <Icon size={16} />
+                          {item.label}
+                        </span>
+                        <ChevronRight size={16} />
+                      </Link>
+                    )
+                  })}
+
+                  <div className="border-t border-[var(--border)] pt-3 mt-3 space-y-2">
+                    <button
+                      onClick={toggleTheme}
+                      className="w-full flex items-center gap-3 px-4 py-3 rounded-soft hover:bg-[var(--bg)] transition-colors text-[var(--text-primary)] font-body text-sm"
+                    >
+                      {theme === 'light' ? <Moon size={16} /> : <Sun size={16} />}
+                      <span>{theme === 'light' ? 'Dark Mode' : 'Light Mode'}</span>
+                    </button>
+
+                    <button
+                      onClick={handleLogout}
+                      className="w-full flex items-center gap-3 px-4 py-3 rounded-soft bg-[var(--cta-primary)] hover:bg-[var(--cta-hover)] transition-colors text-white font-body text-sm"
+                    >
+                      <LogOut size={16} />
+                      <span>Logout</span>
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             {/* Mobile Content */}
             <div className="flex-1 overflow-auto p-4 bg-[var(--bg)]">{children}</div>
