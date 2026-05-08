@@ -1,6 +1,7 @@
 "use client"
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from "react"
+import { createClient } from "@supabase/supabase-js"
 
 interface User {
   id: string
@@ -12,24 +13,17 @@ interface AuthContextType {
   user: User | null
   isLoading: boolean
   login: (email: string, password: string) => Promise<boolean>
-  logout: () => void
+  logout: () => Promise<void>
   isAuthenticated: boolean
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-// Demo credentials - in production, this would be replaced with Supabase auth
-const DEMO_CREDENTIALS = {
-  email: "admin@infinitestudio.com",
-  password: "admin123",
-}
-
-const STORAGE_KEY = "infinite_studio_admin_session"
-
-interface StoredSession {
-  user: User
-  timestamp: number
-}
+// Initialize Supabase client
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL || "",
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ""
+)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
@@ -37,47 +31,70 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Check for existing session on mount
   useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY)
-    if (stored) {
+    const checkSession = async () => {
       try {
-        const session: StoredSession = JSON.parse(stored)
-        // Check if session is still valid (24 hour expiry)
-        const isValid = Date.now() - session.timestamp < 24 * 60 * 60 * 1000
-        if (isValid) {
-          setUser(session.user)
-        } else {
-          localStorage.removeItem(STORAGE_KEY)
+        const {
+          data: { session },
+        } = await supabase.auth.getSession()
+
+        if (session?.user) {
+          const newUser: User = {
+            id: session.user.id,
+            email: session.user.email || "",
+            name: session.user.user_metadata?.full_name || "Admin",
+          }
+          setUser(newUser)
         }
       } catch (err) {
-        localStorage.removeItem(STORAGE_KEY)
+        console.error("Session check error:", err)
+      } finally {
+        setIsLoading(false)
       }
     }
-    setIsLoading(false)
+
+    checkSession()
+
+    // Set up auth state listener
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (session?.user) {
+        const newUser: User = {
+          id: session.user.id,
+          email: session.user.email || "",
+          name: session.user.user_metadata?.full_name || "Admin",
+        }
+        setUser(newUser)
+      } else {
+        setUser(null)
+      }
+    })
+
+    return () => {
+      subscription?.unsubscribe()
+    }
   }, [])
 
   const login = async (email: string, password: string): Promise<boolean> => {
     setIsLoading(true)
     try {
-      // Simulate API call delay
-      await new Promise((resolve) => setTimeout(resolve, 500))
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
 
-      // Demo authentication - in production, call Supabase
-      if (email === DEMO_CREDENTIALS.email && password === DEMO_CREDENTIALS.password) {
+      if (error) {
+        console.error("Auth error:", error.message)
+        return false
+      }
+
+      if (data.user) {
         const newUser: User = {
-          id: "admin-001",
-          email: email,
-          name: "Studio Admin",
+          id: data.user.id,
+          email: data.user.email || "",
+          name: data.user.user_metadata?.full_name || "Admin",
         }
-
         setUser(newUser)
-
-        // Store session in localStorage
-        const session: StoredSession = {
-          user: newUser,
-          timestamp: Date.now(),
-        }
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(session))
-
         return true
       }
 
@@ -90,9 +107,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  const logout = () => {
-    setUser(null)
-    localStorage.removeItem(STORAGE_KEY)
+  const logout = async () => {
+    try {
+      await supabase.auth.signOut()
+      setUser(null)
+    } catch (err) {
+      console.error("Logout error:", err)
+    }
   }
 
   return (

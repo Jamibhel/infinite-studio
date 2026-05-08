@@ -137,13 +137,10 @@ export default function AdminLogin() {
           </form>
 
           {/* Demo Credentials */}
-          <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-            <p className="text-xs font-semibold text-blue-900 mb-2">Demo Credentials:</p>
-            <p className="text-xs text-blue-800">
-              Email: <span className="font-mono">admin@infinitestudio.com</span>
-            </p>
-            <p className="text-xs text-blue-800">
-              Password: <span className="font-mono">admin123</span>
+          <div className="mt-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+            <p className="text-xs font-semibold text-amber-900 mb-2">ℹ️ Real Authentication</p>
+            <p className="text-xs text-amber-800">
+              Use your Supabase authentication credentials to sign in to the admin panel.
             </p>
           </div>
         </motion.div>

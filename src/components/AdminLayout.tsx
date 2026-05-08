@@ -22,8 +22,8 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
     setIsClient(true)
   }, [])
 
-  const handleLogout = () => {
-    logout()
+  const handleLogout = async () => {
+    await logout()
     router.push("/admin/login")
   }
 
