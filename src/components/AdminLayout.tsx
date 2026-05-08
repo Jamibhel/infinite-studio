@@ -12,25 +12,15 @@ import { ProtectedRoute } from "./ProtectedRoute"
 function AdminLayoutContent({ children }: { children: React.ReactNode }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [isClient, setIsClient] = useState(false)
-  const [mounted, setMounted] = useState(false)
-  const [theme, setTheme] = useState<'light' | 'dark'>('light')
-  const [toggleThemeFn, setToggleThemeFn] = useState<() => void>(() => {})
-  
   const router = useRouter()
   const pathname = usePathname()
   const { logout, user } = useAuth()
-  const themeContext = useTheme()
+  const { theme, toggleTheme } = useTheme()
 
   // Ensure hooks only run on client
   useEffect(() => {
     setIsClient(true)
-    setMounted(true)
-    // Set theme from context after mount
-    if (themeContext) {
-      setTheme(themeContext.theme)
-      setToggleThemeFn(() => themeContext.toggleTheme)
-    }
-  }, [themeContext])
+  }, [])
 
   const handleLogout = () => {
     logout()
@@ -90,13 +80,13 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
 
             {/* Footer Controls */}
             <div className="border-t border-[var(--border)] p-4 space-y-2">
-                <button
-                  onClick={toggleThemeFn}
-                  className="w-full flex items-center gap-3 px-4 py-3 rounded-soft hover:bg-[var(--bg)] transition-colors font-body text-sm"
-                >
-                  {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
-                  <span>{theme === 'light' ? 'Dark Mode' : 'Light Mode'}</span>
-                </button>
+              <button
+                onClick={toggleTheme}
+                className="w-full flex items-center gap-3 px-4 py-3 rounded-soft hover:bg-[var(--bg)] transition-colors font-body text-sm"
+              >
+                {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
+                <span>{theme === 'light' ? 'Dark Mode' : 'Light Mode'}</span>
+              </button>
               <button
                 onClick={handleLogout}
                 className="w-full flex items-center gap-3 px-4 py-3 rounded-soft bg-[var(--cta-primary)] hover:bg-[var(--cta-hover)] transition-colors text-white font-body text-sm"
@@ -118,7 +108,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
 
               <div className="flex items-center gap-2">
                 <button
-                  onClick={toggleThemeFn}
+                  onClick={toggleTheme}
                   className="p-2 hover:bg-[var(--bg)] rounded-soft transition-colors"
                 >
                   {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}

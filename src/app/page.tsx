@@ -1,36 +1,61 @@
 "use client"
 
 import Link from "next/link"
+import { useEffect, useState } from "react"
 import { motion } from "framer-motion"
 import { ArrowRight, Sparkles, Check, Star } from "lucide-react"
 import { FAQ } from "@/components/FAQ"
 import { Blog } from "@/components/Blog"
 
 export default function Home() {
+  const [isMobile, setIsMobile] = useState(false)
+  const [reduceMotion, setReduceMotion] = useState(false)
+
+  useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth <= 640)
+    onResize()
+    window.addEventListener("resize", onResize)
+
+    const rm = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)")
+    setReduceMotion(rm ? rm.matches : false)
+
+    return () => window.removeEventListener("resize", onResize)
+  }, [])
+
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
-      transition: { staggerChildren: 0.2, delayChildren: 0.3 },
+      transition: { staggerChildren: isMobile ? 0.12 : 0.2, delayChildren: 0.25 },
     },
   }
 
   const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: "easeOut" } },
+    hidden: { opacity: 0, y: isMobile ? 12 : 20 },
+    visible: { opacity: 1, y: 0, transition: { duration: isMobile ? 0.55 : 0.8, ease: "easeOut" } },
   }
 
   return (
     <div style={{ backgroundColor: "var(--bg)", color: "var(--text-primary)" }}>
       {/* ===== HERO SECTION ===== */}
       <section
-        className="relative min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8 py-20 mt-16 bg-cover bg-center"
+        className="relative min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8 py-20 mt-16 bg-cover bg-center overflow-hidden"
         style={{
           backgroundImage:
             "linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), url('https://images.unsplash.com/photo-1516975080664-ed2fc6a32937?w=1200&h=900&fit=crop')",
           backgroundAttachment: "fixed",
         }}
       >
+
+        {/* background subtle zoom for mobile */}
+        <motion.div
+          aria-hidden
+          className="absolute inset-0"
+          initial={reduceMotion ? {} : { scale: 1 }}
+          animate={reduceMotion ? {} : { scale: isMobile ? 1.06 : 1 }}
+          transition={{ duration: 8, ease: "linear", repeat: Infinity, repeatType: "reverse" }}
+          style={{ backgroundImage: "inherit", backgroundSize: "cover", backgroundPosition: "center" }}
+        />
 
         <motion.div
           className="relative z-10 max-w-4xl mx-auto text-center"
@@ -39,15 +64,13 @@ export default function Home() {
           animate="visible"
         >
           {/* Badge */}
+          {/* floating badge */}
           <motion.div
             variants={itemVariants}
-            className="inline-block mb-6"
-            style={{
-              backgroundColor: "rgba(255, 255, 255, 0.1)",
-              color: "white",
-              backdropFilter: "blur(10px)",
-              border: "1px solid rgba(255, 255, 255, 0.2)",
-            }}
+            className="inline-block mb-6 glass"
+            style={{ color: "white" }}
+            animate={reduceMotion ? undefined : { y: [0, -6, 0], opacity: [1, 0.95, 1] }}
+            transition={reduceMotion ? undefined : { duration: 3.6, repeat: Infinity, ease: "easeInOut" }}
           >
             <span className="px-4 py-2 rounded-full text-sm font-semibold flex items-center gap-2">
               <Sparkles size={16} />
@@ -74,9 +97,13 @@ export default function Home() {
           </motion.p>
 
           {/* CTA Buttons */}
-          <motion.div variants={itemVariants} className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
+          <motion.div
+            variants={itemVariants}
+            className="flex flex-col sm:flex-row gap-4 justify-center mb-16"
+          >
             <Link href="/booking">
-              <button
+              <motion.button
+                whileTap={reduceMotion ? undefined : { scale: isMobile ? 0.97 : 0.985 }}
                 className="btn-primary flex items-center justify-center gap-2 w-full sm:w-auto"
                 style={{
                   backgroundColor: "var(--cta-primary)",
@@ -84,21 +111,20 @@ export default function Home() {
                 }}
               >
                 Book Now <ArrowRight size={20} />
-              </button>
+              </motion.button>
             </Link>
             <Link href="/spaces">
-              <button
+              <motion.button
+                whileTap={reduceMotion ? undefined : { scale: isMobile ? 0.985 : 0.995 }}
                 className="w-full sm:w-auto px-6 py-3 text-sm font-semibold rounded-lg transition-all"
                 style={{
                   backgroundColor: "rgba(255, 255, 255, 0.1)",
                   color: "white",
                   border: "1px solid rgba(255, 255, 255, 0.3)",
                 }}
-                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.2)")}
-                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.1)")}
               >
                 Explore Spaces
-              </button>
+              </motion.button>
             </Link>
           </motion.div>
 
@@ -162,11 +188,11 @@ export default function Home() {
             ].map((space, idx) => (
               <motion.div
                 key={idx}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: idx * 0.1 }}
+                initial={{ opacity: 0, y: isMobile ? 8 : 20, scale: isMobile ? 0.992 : 1 }}
+                whileInView={{ opacity: 1, y: 0, scale: 1 }}
+                transition={{ duration: isMobile ? 0.45 : 0.6, delay: idx * (isMobile ? 0.06 : 0.1), ease: "easeOut" }}
                 viewport={{ once: true }}
-                className="card card-hover overflow-hidden"
+                className="card card-hover overflow-hidden glass"
                 style={{
                   backgroundColor: "var(--surface)",
                   borderColor: "var(--border)",

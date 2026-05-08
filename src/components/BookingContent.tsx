@@ -1,20 +1,60 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useSearchParams } from "next/navigation"
 import { useForm } from "react-hook-form"
 import { motion, AnimatePresence } from "framer-motion"
-import { ChevronRight, ChevronLeft, MessageCircle, Check } from "lucide-react"
+import { ChevronRight, ChevronLeft, MessageCircle, Check, Plus, Minus } from "lucide-react"
 import toast from "react-hot-toast"
 
 const spaces = [
-  { id: "bar", name: "The Bar", price: "₦8,500/hr" },
-  { id: "green", name: "Green Screen Studio", price: "₦7,000/hr" },
-  { id: "vanity", name: "Vanity Mirror Corner", price: "₦6,500/hr" },
-  { id: "eid", name: "Eid Shoot Setup", price: "₦9,000/hr" },
-  { id: "staircase", name: "Staircase Scene", price: "₦7,500/hr" },
-  { id: "chair", name: "Chair Space", price: "₦5,500/hr" },
-  { id: "office", name: "Office Set", price: "₦8,000/hr" },
-  { id: "bookshelf", name: "Bookshelf Wall", price: "₦6,000/hr" },
+  { id: "bar", name: "The Bar", price: 12000, priceText: "₦12,000/hr" },
+  { id: "green", name: "Green Screen Studio", price: 10000, priceText: "₦10,000/hr" },
+  { id: "vanity", name: "Vanity Mirror Corner", price: 10500, priceText: "₦10,500/hr" },
+  { id: "eid", name: "Eid Shoot Setup", price: 15000, priceText: "₦15,000/hr" },
+  { id: "staircase", name: "Staircase Scene", price: 11000, priceText: "₦11,000/hr" },
+  { id: "chair", name: "Chair Space", price: 10000, priceText: "₦10,000/hr" },
+  { id: "office", name: "Office Set", price: 12000, priceText: "₦12,000/hr" },
+  { id: "bookshelf", name: "Bookshelf Wall", price: 11500, priceText: "₦11,500/hr" },
+]
+
+const addOns = [
+  {
+    id: "lighting",
+    name: "Professional Lighting Setup",
+    price: 5000,
+    description: "Advanced lighting rig with color temperature control",
+  },
+  {
+    id: "backdrop",
+    name: "Custom Backdrop Installation",
+    price: 3000,
+    description: "Hassle-free backdrop setup with your choice",
+  },
+  {
+    id: "props",
+    name: "Premium Props & Decor",
+    price: 4000,
+    description: "Curated selection of high-quality props",
+  },
+  {
+    id: "styling",
+    name: "Professional Styling Consultation",
+    price: 6000,
+    description: "Expert styling advice and setup optimization",
+  },
+  {
+    id: "camera",
+    name: "Camera & Equipment Rental",
+    price: 8000,
+    description: "Professional camera and lighting equipment",
+  },
+  {
+    id: "editing",
+    name: "Post-Production Editing Package",
+    price: 12000,
+    description: "Professional editing and color grading",
+  },
 ]
 
 interface BookingFormData {
@@ -26,11 +66,14 @@ interface BookingFormData {
   phone: string
   groupSize: number
   notes: string
+  addOns: string[]
 }
 
 export function BookingContent() {
+  const searchParams = useSearchParams()
   const [step, setStep] = useState(1)
   const [selectedSpaces, setSelectedSpaces] = useState<string[]>([])
+  const [selectedAddOns, setSelectedAddOns] = useState<string[]>([])
   const {
     register,
     handleSubmit,
@@ -46,8 +89,36 @@ export function BookingContent() {
       phone: "",
       groupSize: 1,
       notes: "",
+      addOns: [],
     },
   })
+
+  // Pre-select space and add-ons from query params
+  useEffect(() => {
+    const spaceId = searchParams.get("space")
+    if (spaceId) {
+      // Map detail page IDs to booking page IDs
+      const idMap: Record<string, string> = {
+        "the-bar": "bar",
+        "green-screen": "green",
+        "vanity-mirror": "vanity",
+        "eid-setup": "eid",
+        "staircase": "staircase",
+        "chair-space": "chair",
+        "office-set": "office",
+        "bookshelf": "bookshelf",
+      }
+      const bookingId = idMap[spaceId] || spaceId
+      setSelectedSpaces([bookingId])
+    }
+
+    // Pre-select add-ons from query param
+    const addonsParam = searchParams.get("addons")
+    if (addonsParam) {
+      const addonsArray = addonsParam.split(",").filter((a) => a.trim())
+      setSelectedAddOns(addonsArray)
+    }
+  }, [searchParams])
 
   const watchDate = watch("date")
   const watchTime = watch("time")
@@ -61,6 +132,16 @@ export function BookingContent() {
     )
   }
 
+  const toggleAddOn = (addOnId: string) => {
+    console.log("Toggle add-on clicked:", addOnId)
+    setSelectedAddOns((prev) => {
+      const updated = prev.includes(addOnId) ? prev.filter((a) => a !== addOnId) : [...prev, addOnId]
+      console.log("Selected add-ons after toggle:", updated)
+      return updated
+    })
+    toast.success(`Add-on toggled!`)
+  }
+
   const handleNext = () => {
     if (step === 1 && selectedSpaces.length === 0) {
       toast.error("Please select at least one space")
@@ -70,7 +151,8 @@ export function BookingContent() {
       toast.error("Please select date and time")
       return
     }
-    if (step < 3) {
+    // Allow navigation through 4 steps (step 1..4)
+    if (step < 4) {
       setStep(step + 1)
     }
   }
@@ -83,23 +165,46 @@ export function BookingContent() {
     const bookingData = {
       ...data,
       spaces: selectedSpaces,
+      addOns: selectedAddOns,
     }
 
     try {
+      // Calculate pricing
+      const spacePrice = selectedSpaces.reduce(
+        (sum, s) => sum + (spaces.find((sp) => sp.id === s)?.price || 0),
+        0
+      )
+      const addOnPrice = selectedAddOns.reduce(
+        (sum, a) => sum + (addOns.find((addon) => addon.id === a)?.price || 0),
+        0
+      )
+      const totalPrice = spacePrice + addOnPrice
+
       // Format message for WhatsApp
       const message = `
 Hi! I'd like to book a session at Infinite Studio.
 
 *Selected Spaces:* ${selectedSpaces.map((s) => spaces.find((sp) => sp.id === s)?.name).join(", ")}
+*Space Total:* ₦${spacePrice.toLocaleString()}
+
+${
+  selectedAddOns.length > 0
+    ? `*Add-ons:* ${selectedAddOns.map((a) => addOns.find((addon) => addon.id === a)?.name).join(", ")}
+*Add-ons Total:* ₦${addOnPrice.toLocaleString()}
+`
+    : ""
+}*Estimated Total:* ₦${totalPrice.toLocaleString()}
+
 *Date:* ${data.date}
 *Time:* ${data.time}
+*Hours:* 1 hour (minimum)
 *Group Size:* ${data.groupSize}
 *Name:* ${data.name}
 *Email:* ${data.email}
 *Phone:* ${data.phone}
 ${data.notes ? `*Notes:* ${data.notes}` : ""}
 
-Please confirm availability and pricing.
+Please confirm availability and final pricing.
       `.trim()
 
       const whatsappUrl = `https://wa.me/2347040000000?text=${encodeURIComponent(message)}`
@@ -110,6 +215,7 @@ Please confirm availability and pricing.
       // Reset form
       setStep(1)
       setSelectedSpaces([])
+      setSelectedAddOns([])
     } catch (error) {
       toast.error("Failed to process booking")
       console.error(error)
@@ -126,13 +232,13 @@ Please confirm availability and pricing.
         <div className="mb-16 text-center">
           <h1 className="heading-h1 mb-4">Book Your Space</h1>
           <p style={{ color: "var(--text-muted)" }}>
-            Three simple steps to reserve your perfect studio moment
+            Four simple steps to reserve your perfect studio moment
           </p>
         </div>
 
         {/* PROGRESS INDICATOR */}
         <div className="flex justify-between items-center mb-12">
-          {[1, 2, 3].map((num) => (
+          {[1, 2, 3, 4].map((num) => (
             <div key={num} className="flex items-center flex-1">
               <motion.div
                 className="w-10 h-10 rounded-full flex items-center justify-center font-semibold text-sm cursor-pointer"
@@ -144,7 +250,7 @@ Please confirm availability and pricing.
               >
                 {step > num ? <Check size={20} /> : num}
               </motion.div>
-              {num < 3 && (
+              {num < 4 && (
                 <div
                   className="h-1 flex-1 mx-2"
                   style={{
@@ -219,6 +325,75 @@ Please confirm availability and pricing.
                       </div>
                     </motion.button>
                   ))}
+                </div>
+
+                {/* ADD-ONS IN STEP 1 */}
+                <div className="mb-8">
+                  <h3 className="text-lg font-semibold mb-4">Enhance Your Booking (Optional)</h3>
+                  <p style={{ color: "var(--text-muted)" }} className="mb-4 text-sm">
+                    Add professional services to elevate your shoot
+                  </p>
+                  <div className="grid md:grid-cols-2 gap-3">
+                    {addOns.map((addon) => (
+                      <motion.button
+                        key={addon.id}
+                        type="button"
+                        onClick={() => toggleAddOn(addon.id)}
+                        className="p-4 rounded-lg transition-all text-left"
+                        style={{
+                          backgroundColor: selectedAddOns.includes(addon.id)
+                            ? "var(--cta-primary)"
+                            : "var(--surface)",
+                          color: selectedAddOns.includes(addon.id)
+                            ? "white"
+                            : "var(--text-primary)",
+                          border: `2px solid ${
+                            selectedAddOns.includes(addon.id)
+                              ? "var(--cta-primary)"
+                              : "var(--surface)"
+                          }`,
+                        }}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                      >
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <p className="font-semibold text-sm">{addon.name}</p>
+                            <p
+                              className="text-xs"
+                              style={{
+                                color: selectedAddOns.includes(addon.id)
+                                  ? "rgba(255, 255, 255, 0.9)"
+                                  : "var(--text-muted)",
+                              }}
+                            >
+                              {addon.description}
+                            </p>
+                          </div>
+                          <div
+                            className="w-5 h-5 rounded border-2 flex items-center justify-center flex-shrink-0 ml-2"
+                            style={{
+                              borderColor: selectedAddOns.includes(addon.id)
+                                ? "white"
+                                : "var(--text-muted)",
+                            }}
+                          >
+                            {selectedAddOns.includes(addon.id) && <Check size={14} />}
+                          </div>
+                        </div>
+                        <div
+                          className="text-xs font-semibold mt-2"
+                          style={{
+                            color: selectedAddOns.includes(addon.id)
+                              ? "rgba(255, 255, 255, 0.9)"
+                              : "var(--cta-primary)",
+                          }}
+                        >
+                          +₦{addon.price.toLocaleString()}
+                        </div>
+                      </motion.button>
+                    ))}
+                  </div>
                 </div>
               </motion.div>
             )}
@@ -395,6 +570,8 @@ Please confirm availability and pricing.
                 </div>
               </motion.div>
             )}
+
+            {/* STEP 4: (removed) - add-ons moved to Step 1 */}
           </AnimatePresence>
 
           {/* NAVIGATION BUTTONS */}
@@ -415,7 +592,7 @@ Please confirm availability and pricing.
               Back
             </motion.button>
 
-            {step < 3 ? (
+            {step < 4 ? (
               <motion.button
                 type="button"
                 onClick={handleNext}
@@ -445,9 +622,8 @@ Please confirm availability and pricing.
         {/* SUMMARY */}
         {selectedSpaces.length > 0 && (
           <motion.div
-            className="mt-12 p-6 rounded-lg"
+            className="mt-12 p-6 rounded-lg glass"
             style={{
-              backgroundColor: "var(--surface)",
               border: "2px solid var(--cta-primary)",
             }}
             initial={{ opacity: 0, y: 10 }}
@@ -464,6 +640,37 @@ Please confirm availability and pricing.
               {watchDate && <p><strong>Date:</strong> {watchDate}</p>}
               {watchTime && <p><strong>Time:</strong> {watchTime}</p>}
               {watchName && <p><strong>Name:</strong> {watchName}</p>}
+
+              {/* Pricing breakdown */}
+              <div className="mt-2">
+                <p>
+                  <strong>Spaces Total:</strong>{" "}
+                  ₦{selectedSpaces
+                    .reduce((sum, s) => sum + (spaces.find((sp) => sp.id === s)?.price || 0), 0)
+                    .toLocaleString()}
+                </p>
+                <p>
+                  <strong>Add-ons:</strong>{" "}
+                  {selectedAddOns.length === 0
+                    ? "None"
+                    : selectedAddOns
+                        .map((a) => addOns.find((ad) => ad.id === a)?.name)
+                        .join(", ")}
+                </p>
+                <p>
+                  <strong>Add-ons Total:</strong>{" "}
+                  ₦{selectedAddOns
+                    .reduce((sum, a) => sum + (addOns.find((ad) => ad.id === a)?.price || 0), 0)
+                    .toLocaleString()}
+                </p>
+                <p className="mt-1">
+                  <strong>Estimated Total:</strong>{" "}
+                  ₦{(
+                    selectedSpaces.reduce((sum, s) => sum + (spaces.find((sp) => sp.id === s)?.price || 0), 0) +
+                    selectedAddOns.reduce((sum, a) => sum + (addOns.find((ad) => ad.id === a)?.price || 0), 0)
+                  ).toLocaleString()}
+                </p>
+              </div>
             </div>
           </motion.div>
         )}

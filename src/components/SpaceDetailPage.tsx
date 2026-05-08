@@ -2,8 +2,48 @@
 
 import { useState } from "react"
 import { motion } from "framer-motion"
-import { ArrowRight, X, ChevronLeft, ChevronRight } from "lucide-react"
+import { ArrowRight, X, ChevronLeft, ChevronRight, Plus, Minus } from "lucide-react"
 import Link from "next/link"
+
+// Add-ons data
+const addOnsData = [
+  {
+    id: "lighting",
+    name: "Professional Lighting Setup",
+    price: 5000,
+    description: "Advanced lighting rig with color temperature control",
+  },
+  {
+    id: "backdrop",
+    name: "Custom Backdrop Installation",
+    price: 3000,
+    description: "Hassle-free backdrop setup with your choice of color/pattern",
+  },
+  {
+    id: "props",
+    name: "Premium Props & Decor",
+    price: 4000,
+    description: "Curated selection of high-quality props and decorative items",
+  },
+  {
+    id: "styling",
+    name: "Professional Styling Consultation",
+    price: 6000,
+    description: "Expert styling advice and setup optimization",
+  },
+  {
+    id: "camera",
+    name: "Camera & Equipment Rental",
+    price: 8000,
+    description: "Professional camera and lighting equipment",
+  },
+  {
+    id: "editing",
+    name: "Post-Production Editing Package",
+    price: 12000,
+    description: "Professional editing, color grading, and delivery",
+  },
+]
 
 // Space data with multiple images for each
 const spacesData = [
@@ -14,7 +54,7 @@ const spacesData = [
       "Dark wood tones, ambient lighting, and a fully styled bar counter. Perfect for editorial shoots, music videos, lifestyle content, and anything with an edge.",
     fullDescription:
       "Step into sophistication with our Bar space. This meticulously designed environment features authentic bar setup with ambient lighting that creates the perfect moody atmosphere. Ideal for lifestyle shoots, music videos, brand campaigns, and editorial work that demands edge and attitude.",
-    price: "₦8,500",
+    price: "₦12,000",
     priceType: "/hour",
     features: ["Professional Bar Setup", "Ambient Lighting", "Moody Aesthetics", "Full Bar Equipment", "LED Accent Lighting"],
     images: [
@@ -31,7 +71,7 @@ const spacesData = [
       "Step into any world. Our professional green screen setup gives you the power to place yourself anywhere — from fantasy sets to branded environments.",
     fullDescription:
       "Transform your creative vision into any reality with our professional Green Screen studio. Equipped with a 4K capable green screen backdrop, professional lighting rigs, and full chroma-key support. Perfect for virtual set content, product visualization, creative storytelling, and unlimited post-production possibilities.",
-    price: "₦7,000",
+    price: "₦10,000",
     priceType: "/hour",
     features: ["4K Green Screen", "Professional Lighting", "Unlimited Possibilities", "Chroma Key Ready", "Professional Rigging"],
     images: [
@@ -48,7 +88,7 @@ const spacesData = [
       "Hollywood-style bulb lighting surrounds a full-length vanity mirror. Made for beauty content, brand shoots, and behind-the-scenes moments.",
     fullDescription:
       "Capture that Hollywood glamour with our iconic Vanity Mirror Corner. Featuring professional Hollywood-style bulb lighting, a full-length mirror, and carefully curated decor. Perfect for beauty tutorials, makeup content, personal branding, and those Instagram-worthy behind-the-scenes moments.",
-    price: "₦6,500",
+    price: "₦10,500",
     priceType: "/hour",
     features: ["Hollywood Lighting", "Full-Length Mirror", "Beauty Focused", "Professional Setup", "Perfect Lighting Angles"],
     images: [
@@ -65,7 +105,7 @@ const spacesData = [
       "An elegantly decorated space built to celebrate. Rich colours, soft textures, and details that make every cultural moment feel timeless.",
     fullDescription:
       "Celebrate in style with our specially designed Eid Shoot Setup. This uniquely decorated space combines cultural elements with modern design, featuring rich colors, luxurious textures, and thoughtfully placed decor that captures the essence of festive celebration. Perfect for family shoots, cultural content, and milestone celebrations.",
-    price: "₦9,000",
+    price: "₦15,000",
     priceType: "/hour",
     features: ["Cultural Decor", "Festive Ambience", "Premium Setup", "Luxurious Textures", "Celebration Focused"],
     images: [
@@ -82,7 +122,7 @@ const spacesData = [
       "Clean lines, natural light, and an architectural staircase that adds dimension and drama. A favourite for fashion, portrait, and lifestyle content.",
     fullDescription:
       "Add dimension and drama to your content with our Staircase Scene. Featuring architectural clean lines, abundant natural light, and dramatic angles that work perfectly for fashion, editorial portraits, and lifestyle content. The geometric design elements create dynamic compositions with minimal setup.",
-    price: "₦7,500",
+    price: "₦11,000",
     priceType: "/hour",
     features: ["Natural Light", "Architectural Design", "Dramatic Angles", "Fashion Ready", "Geometric Perfection"],
     images: [
@@ -99,7 +139,7 @@ const spacesData = [
       "Simplicity at its finest. A beautifully lit, carefully styled single-chair setup — the kind of clean frame that lets your subject speak.",
     fullDescription:
       "Sometimes simplicity speaks volumes. Our Chair Space strips away distractions with a single, beautifully lit, meticulously styled chair that puts all focus on your subject. Perfect for interviews, podcasts, portraits, and content where your talent is the star.",
-    price: "₦5,500",
+    price: "₦10,000",
     priceType: "/hour",
     features: ["Minimal Design", "Clean Setup", "Subject Focused", "Perfect Lighting", "Interview Ready"],
     images: [
@@ -116,7 +156,7 @@ const spacesData = [
       "A sleek, contemporary workspace setting ideal for business content, LinkedIn shots, corporate videos, and professional brand storytelling.",
     fullDescription:
       "Project professionalism with our sleek Office Set. Featuring contemporary furniture, modern aesthetics, and corporate-ready lighting, this space is perfect for LinkedIn content, business podcasts, corporate videos, thought leadership shoots, and professional brand storytelling.",
-    price: "₦8,000",
+    price: "₦12,000",
     priceType: "/hour",
     features: ["Corporate Setup", "Modern Design", "Professional Grade", "Tech Ready", "Business Focused"],
     images: [
@@ -133,7 +173,7 @@ const spacesData = [
       "Floor-to-ceiling books, warm lighting, and scholarly vibes. Perfect for thought leadership, educational content, and sophisticated storytelling.",
     fullDescription:
       "Establish credibility and sophistication with our Bookshelf Wall. Floor-to-ceiling books, warm professional lighting, and intellectual ambiance create the perfect backdrop for thought leadership content, educational videos, author interviews, and expert positioning.",
-    price: "₦6,000",
+    price: "₦11,500",
     priceType: "/hour",
     features: ["Bookshelf Backdrop", "Warm Lighting", "Intellectual Vibes", "Author Ready", "Educational Grade"],
     images: [
@@ -148,6 +188,7 @@ const spacesData = [
 export function SpaceDetailPage({ spaceId }: { spaceId: string }) {
   const space = spacesData.find((s) => s.id === spaceId)
   const [selectedImageIndex, setSelectedImageIndex] = useState(0)
+  const [selectedAddOns, setSelectedAddOns] = useState<string[]>([])
 
   if (!space) {
     return (
@@ -179,6 +220,12 @@ export function SpaceDetailPage({ spaceId }: { spaceId: string }) {
 
   const handlePrev = () => {
     setSelectedImageIndex((prev) => (prev - 1 + space.images.length) % space.images.length)
+  }
+
+  const toggleAddOn = (addOnId: string) => {
+    setSelectedAddOns((prev) =>
+      prev.includes(addOnId) ? prev.filter((a) => a !== addOnId) : [...prev, addOnId]
+    )
   }
 
   return (
@@ -342,14 +389,86 @@ export function SpaceDetailPage({ spaceId }: { spaceId: string }) {
           </div>
         </motion.div>
 
+        {/* ADD-ONS SECTION */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.25 }}
+          className="mb-12 glass"
+        >
+          <h2 className="heading-h2 mb-6">Enhance Your Booking</h2>
+          <p style={{ color: "var(--text-muted)" }} className="mb-6">
+            Add professional services to elevate your shoot
+          </p>
+          <div className="grid md:grid-cols-2 gap-4">
+            {addOnsData.map((addon, idx) => (
+              <motion.button
+                key={addon.id}
+                type="button"
+                onClick={() => toggleAddOn(addon.id)}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: 0.3 + idx * 0.05 }}
+                className="p-4 rounded-lg border transition-all hover:shadow-lg text-left"
+                style={{
+                  backgroundColor: selectedAddOns.includes(addon.id)
+                    ? "var(--cta-primary)"
+                    : "var(--surface)",
+                  borderColor: selectedAddOns.includes(addon.id)
+                    ? "var(--cta-primary)"
+                    : "var(--border)",
+                  borderWidth: "2px",
+                  color: selectedAddOns.includes(addon.id)
+                    ? "white"
+                    : "var(--text-primary)",
+                }}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <div className="flex justify-between items-start mb-2">
+                  <div>
+                    <h3 className="font-semibold mb-1">{addon.name}</h3>
+                    <p
+                      style={{
+                        color: selectedAddOns.includes(addon.id)
+                          ? "rgba(255, 255, 255, 0.9)"
+                          : "var(--text-muted)",
+                      }}
+                      className="text-sm"
+                    >
+                      {addon.description}
+                    </p>
+                  </div>
+                  <div
+                    className="px-3 py-1 rounded-full text-sm font-semibold whitespace-nowrap ml-2"
+                    style={{
+                      backgroundColor: selectedAddOns.includes(addon.id)
+                        ? "rgba(255,255,255,0.2)"
+                        : "var(--bg)",
+                      color: selectedAddOns.includes(addon.id)
+                        ? "white"
+                        : "var(--cta-primary)",
+                    }}
+                  >
+                    +₦{addon.price.toLocaleString()}
+                  </div>
+                </div>
+              </motion.button>
+            ))}
+          </div>
+        </motion.div>
+
         {/* CTA */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.3 }}
-          className="flex gap-4"
+          className="flex gap-4 glass-strong p-4"
         >
-          <Link href="/booking" className="flex-1">
+          <Link
+            href={`/booking?space=${space.id}${selectedAddOns.length > 0 ? `&addons=${selectedAddOns.join(",")}` : ""}`}
+            className="flex-1"
+          >
             <button
               className="w-full px-8 py-4 rounded-lg font-semibold text-white flex items-center justify-center gap-2 transition-all"
               style={{ backgroundColor: "var(--cta-primary)" }}
