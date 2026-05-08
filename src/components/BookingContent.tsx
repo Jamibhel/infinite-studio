@@ -6,6 +6,7 @@ import { useForm } from "react-hook-form"
 import { motion, AnimatePresence } from "framer-motion"
 import { ChevronRight, ChevronLeft, MessageCircle, Check, Plus, Minus } from "lucide-react"
 import toast from "react-hot-toast"
+import { createClient } from "@supabase/supabase-js"
 
 const spaces = [
   { id: "bar", name: "The Bar", price: 12000, priceText: "₦12,000/hr" },
@@ -203,10 +204,40 @@ ${data.notes ? `*Notes:* ${data.notes}` : ""}
 Please confirm availability and final pricing.
       `.trim()
 
+      // Save booking to Supabase
+      const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL || "",
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ""
+      )
+
+      const bookingRecord = {
+        name: data.name,
+        email: data.email,
+        phone: data.phone,
+        spaces: selectedSpaces,
+        date: data.date,
+        time: data.time,
+        status: "pending",
+        group_size: data.groupSize,
+        addons: selectedAddOns,
+        amount: totalPrice,
+        notes: data.notes,
+        created_at: new Date().toISOString(),
+      }
+
+      const { data: insertData, error: dbError } = await supabase
+        .from("bookings")
+        .insert([bookingRecord])
+
+      if (dbError) {
+        console.error("Booking save error:", dbError.message)
+        toast.error("Booking sent via WhatsApp but failed to save in system. Contact admin.")
+      } else {
+        toast.success("Booking confirmed and saved!")
+      }
+
       const whatsappUrl = `https://wa.me/2347040000000?text=${encodeURIComponent(message)}`
       window.open(whatsappUrl, "_blank")
-
-      toast.success("Opening WhatsApp to confirm your booking!")
 
       // Reset form
       setStep(1)
