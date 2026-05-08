@@ -20,13 +20,13 @@ export function Navigation() {
 
   return (
     <nav
-      className="fixed top-0 w-full z-50 border-b backdrop-blur-3xl glass-strong"
+      className="fixed top-0 w-full z-50 border-b backdrop-blur-3xl"
       style={{
-        backgroundColor: "var(--surface)",
+        backgroundColor: "transparent",
         borderColor: "var(--border)",
       }}
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 glass-strong/40">
         <div className="flex justify-between items-center h-20">
           {/* Logo with animation */}
           <Link href="/" className="flex items-center gap-3 group">

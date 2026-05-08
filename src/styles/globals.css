@@ -64,6 +64,19 @@
     opacity: 0.02;
     z-index: -1;
   }
+
+  /* Remove subtle material/noise overlay on small screens to keep mobile clean */
+  @media (max-width: 640px) {
+    body::before {
+      display: none;
+    }
+
+    /* slightly reduce glass intensity on very small screens for performance */
+    .glass-strong {
+      backdrop-filter: blur(8px) saturate(1.06) contrast(1.02);
+      -webkit-backdrop-filter: blur(8px) saturate(1.06) contrast(1.02);
+    }
+  }
 }
 
 /* ===== TYPOGRAPHY ===== */

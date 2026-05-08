@@ -207,17 +207,17 @@ export default function Home() {
               },
             ].map((space, idx) => (
               <motion.div
-                key={idx}
-                initial={{ opacity: 0, y: isMobile ? 8 : 20, scale: isMobile ? 0.992 : 1 }}
-                whileInView={{ opacity: 1, y: 0, scale: 1 }}
-                transition={{ duration: isMobile ? 0.45 : 0.6, delay: idx * (isMobile ? 0.06 : 0.1), ease: "easeOut" }}
-                viewport={{ once: true }}
-                className="card card-hover overflow-hidden glass"
-                style={{
-                  backgroundColor: "var(--surface)",
-                  borderColor: "var(--border)",
-                }}
-              >
+                  key={idx}
+                  initial={{ opacity: 0, y: isMobile ? 8 : 26, scale: isMobile ? 0.988 : 0.995, rotate: isMobile ? 0 : -0.6 }}
+                  whileInView={{ opacity: 1, y: 0, scale: 1, rotate: 0 }}
+                  transition={{ duration: isMobile ? 0.45 : 0.7, delay: idx * (isMobile ? 0.05 : 0.12), ease: "cubic-bezier(0.22, 1, 0.36, 1)" }}
+                  viewport={{ once: true }}
+                  className="card card-hover overflow-hidden glass"
+                  style={{
+                    backgroundColor: "var(--surface)",
+                    borderColor: "var(--border)",
+                  }}
+                >
                 {/* Image */}
                 <div
                   className="w-full h-40 bg-cover bg-center"
