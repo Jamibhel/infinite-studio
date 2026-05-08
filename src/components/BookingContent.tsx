@@ -133,13 +133,9 @@ export function BookingContent() {
   }
 
   const toggleAddOn = (addOnId: string) => {
-    console.log("Toggle add-on clicked:", addOnId)
-    setSelectedAddOns((prev) => {
-      const updated = prev.includes(addOnId) ? prev.filter((a) => a !== addOnId) : [...prev, addOnId]
-      console.log("Selected add-ons after toggle:", updated)
-      return updated
-    })
-    toast.success(`Add-on toggled!`)
+    setSelectedAddOns((prev) =>
+      prev.includes(addOnId) ? prev.filter((a) => a !== addOnId) : [...prev, addOnId]
+    )
   }
 
   const handleNext = () => {
@@ -622,7 +618,7 @@ Please confirm availability and final pricing.
         {/* SUMMARY */}
         {selectedSpaces.length > 0 && (
           <motion.div
-            className="mt-12 p-6 rounded-lg glass"
+            className="mt-12 p-6 rounded-lg glass-strong"
             style={{
               border: "2px solid var(--cta-primary)",
             }}

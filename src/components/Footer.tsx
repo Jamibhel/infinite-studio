@@ -4,9 +4,19 @@ import Link from "next/link"
 import { Mail, MapPin, Phone, Instagram } from "lucide-react"
 
 export function Footer() {
+  // exclude special styling for booking page if required
+  const isBooking = typeof window !== "undefined" && window.location.pathname.startsWith("/booking")
+
   return (
-    <footer className="bg-dark-bg text-white border-t border-dark-stone">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <footer
+      className={`text-[var(--text-muted)] border-t`} 
+      style={{
+        backgroundColor: "var(--surface)",
+        color: "var(--text-muted)",
+        borderColor: "var(--border)",
+      }}
+    >
+      <div className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 ${!isBooking ? "glass-strong" : ""}`}>
         <div className="grid md:grid-cols-4 gap-8 mb-8">
           {/* Brand */}
           <div>

@@ -20,9 +20,9 @@ export function Navigation() {
 
   return (
     <nav
-      className="fixed top-0 w-full z-50 border-b backdrop-blur-3xl"
+      className="fixed top-0 w-full z-50 border-b backdrop-blur-3xl glass-strong"
       style={{
-        backgroundColor: "rgba(var(--surface-rgb), 0.60)",
+        backgroundColor: "var(--surface)",
         borderColor: "var(--border)",
       }}
     >
@@ -129,17 +129,17 @@ export function Navigation() {
       {/* Mobile Navigation - Smooth slide in */}
       <AnimatePresence>
         {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, height: 0, y: -20 }}
-            animate={{ opacity: 1, height: "auto", y: 0 }}
-            exit={{ opacity: 0, height: 0, y: -20 }}
-            transition={{ duration: 0.3 }}
-            style={{
-              backgroundColor: "var(--surface)",
-              borderTop: "1px solid var(--border)",
-            }}
-          >
-            <div className="px-4 py-4 space-y-2 max-w-7xl mx-auto">
+            <motion.div
+              initial={{ opacity: 0, height: 0, y: -20 }}
+              animate={{ opacity: 1, height: "auto", y: 0 }}
+              exit={{ opacity: 0, height: 0, y: -20 }}
+              transition={{ duration: 0.3 }}
+              style={{
+                backgroundColor: "var(--surface)",
+                borderTop: "1px solid var(--border)",
+              }}
+            >
+            <div className="px-4 py-4 space-y-2 max-w-7xl mx-auto glass">
               {navItems.map((item, idx) => (
                 <motion.div
                   key={item.href}

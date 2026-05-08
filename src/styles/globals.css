@@ -254,21 +254,23 @@
 @layer components {
   /* A subtle glass panel with fallback for browsers without backdrop-filter */
   .glass {
-    background: linear-gradient(135deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
-    border: 1px solid rgba(255,255,255,0.06);
-    backdrop-filter: blur(6px) saturate(1.05);
-    -webkit-backdrop-filter: blur(6px) saturate(1.05);
-    box-shadow: 0 6px 18px rgba(2,6,23,0.18);
+    /* slightly stronger visibility: subtle gradient + translucent border */
+    background: linear-gradient(135deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03));
+    border: 1px solid rgba(255,255,255,0.08);
+    backdrop-filter: blur(8px) saturate(1.06) contrast(1.02);
+    -webkit-backdrop-filter: blur(8px) saturate(1.06) contrast(1.02);
+    box-shadow: 0 8px 22px rgba(2,6,23,0.18);
     border-radius: 12px;
   }
 
   /* Slightly stronger variant for emphasis (use sparingly) */
   .glass-strong {
-    background: linear-gradient(135deg, rgba(255,255,255,0.09), rgba(255,255,255,0.03));
-    border: 1px solid rgba(255,255,255,0.08);
-    backdrop-filter: blur(10px) saturate(1.08);
-    -webkit-backdrop-filter: blur(10px) saturate(1.08);
-    box-shadow: 0 10px 30px rgba(2,6,23,0.22);
+    /* stronger but still subtle - use sparingly */
+    background: linear-gradient(135deg, rgba(255,255,255,0.12), rgba(255,255,255,0.04));
+    border: 1px solid rgba(255,255,255,0.12);
+    backdrop-filter: blur(12px) saturate(1.08) contrast(1.04);
+    -webkit-backdrop-filter: blur(12px) saturate(1.08) contrast(1.04);
+    box-shadow: 0 14px 36px rgba(2,6,23,0.24);
     border-radius: 14px;
   }
 

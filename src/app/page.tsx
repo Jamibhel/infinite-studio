@@ -67,7 +67,7 @@ export default function Home() {
           {/* floating badge */}
           <motion.div
             variants={itemVariants}
-            className="inline-block mb-6 glass"
+            className="inline-block mb-6 glass-strong"
             style={{ color: "white" }}
             animate={reduceMotion ? undefined : { y: [0, -6, 0], opacity: [1, 0.95, 1] }}
             transition={reduceMotion ? undefined : { duration: 3.6, repeat: Infinity, ease: "easeInOut" }}
