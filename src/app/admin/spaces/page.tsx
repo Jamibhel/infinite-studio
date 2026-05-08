@@ -261,6 +261,43 @@ export default function SpacesPage() {
     }
   }
 
+  const createNewSpace = async () => {
+    if (!formData.name || !formData.description) {
+      toast.error("Name and description are required")
+      return
+    }
+
+    try {
+      // Generate ID from name (e.g., "The Bar" -> "the-bar")
+      const spaceId = (formData.name as string).toLowerCase().replace(/\s+/g, "-")
+
+      const { error: insertError } = await supabase
+        .from("spaces")
+        .insert([
+          {
+            id: spaceId,
+            name: formData.name,
+            mood_tag: formData.mood_tag || "",
+            description: formData.description,
+            capacity: formData.capacity || 0,
+            price: formData.price || 0,
+            amenities: formData.amenities || [],
+            images: formData.images || [],
+            is_active: true,
+          },
+        ])
+
+      if (insertError) throw insertError
+
+      toast.success("Space created successfully")
+      closeModal()
+      await fetchSpaces()
+    } catch (err) {
+      console.error("Error creating space:", err)
+      toast.error("Failed to create space")
+    }
+  }
+
   return (
     <AdminLayout>
       <div className="space-y-6">
@@ -270,7 +307,15 @@ export default function SpacesPage() {
             <h1 className="heading-h2 text-[var(--text-primary)]">Spaces Manager</h1>
             <p className="font-body text-[var(--text-muted)] mt-2">Manage studio spaces and settings</p>
           </div>
-          <button className="px-6 py-3 bg-[var(--cta-primary)] hover:bg-[var(--cta-hover)] text-white rounded-soft font-semibold flex items-center gap-2 transition-colors">
+          <button 
+            onClick={() => {
+              setSelectedSpace(null)
+              setFormData({ images: [] })
+              setEditMode(false)
+              setShowModal(true)
+            }}
+            className="px-6 py-3 bg-[var(--cta-primary)] hover:bg-[var(--cta-hover)] text-white rounded-soft font-semibold flex items-center gap-2 transition-colors"
+          >
             <Plus size={20} />
             Add Space
           </button>
@@ -371,7 +416,7 @@ export default function SpacesPage() {
         )}
 
         {/* Modal */}
-        {showModal && selectedSpace && (
+        {showModal && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -387,7 +432,7 @@ export default function SpacesPage() {
               {/* Modal Header with Image */}
               <div className="sticky top-0 bg-[var(--surface)] border-b border-[var(--border)] z-10">
                 <div className="relative h-40 bg-gradient-to-br from-[var(--cta-primary)] to-[var(--tag-accent)] overflow-hidden">
-                  {selectedSpace.images && selectedSpace.images.length > 0 ? (
+                  {selectedSpace?.images && selectedSpace.images.length > 0 ? (
                     <img 
                       src={selectedSpace.images[0]} 
                       alt={selectedSpace.name}
@@ -410,8 +455,8 @@ export default function SpacesPage() {
                 <div className="px-6 py-4 border-b border-[var(--border)]">
                   <div className="flex justify-between items-start">
                     <div>
-                      <h2 className="text-3xl font-bold text-[var(--text-primary)] font-display">{selectedSpace.name}</h2>
-                      <p className="text-[var(--cta-primary)] font-medium mt-1">{selectedSpace.mood_tag}</p>
+                      <h2 className="text-3xl font-bold text-[var(--text-primary)] font-display">{selectedSpace?.name || "New Space"}</h2>
+                      <p className="text-[var(--cta-primary)] font-medium mt-1">{selectedSpace?.mood_tag || ""}</p>
                     </div>
                     {editMode ? (
                       <span className="px-3 py-1 bg-[var(--cta-primary)]/20 text-[var(--cta-primary)] rounded-full text-sm font-semibold border border-[var(--cta-primary)]/30">
@@ -616,7 +661,7 @@ export default function SpacesPage() {
                 </div>
 
                 {/* Stats */}
-                {selectedSpace.stats && (
+                {selectedSpace?.stats && (
                   <div className="space-y-4 p-4 bg-[var(--cta-primary)]/10 border border-[var(--cta-primary)]/20 rounded-soft">
                     <h3 className="font-semibold text-lg text-[var(--text-primary)] font-display">Performance Stats</h3>
                     <div className="grid grid-cols-3 gap-4">
@@ -646,19 +691,16 @@ export default function SpacesPage() {
                     Cancel
                   </button>
                   <button
-                    onClick={() => {
-                      setEditMode(false)
-                      saveSpace()
-                    }}
+                    onClick={selectedSpace ? saveSpace : createNewSpace}
                     className="flex-1 px-4 py-3 bg-[var(--cta-primary)] hover:bg-[var(--cta-hover)] text-white rounded-soft font-semibold transition-colors flex items-center justify-center gap-2"
                   >
                     <Save size={18} />
-                    Save Changes
+                    {selectedSpace ? "Save Changes" : "Create Space"}
                   </button>
                 </div>
               )}
 
-              {!editMode && (
+              {!editMode && selectedSpace && (
                 <div className="sticky bottom-0 bg-[var(--surface)] border-t border-[var(--border)] p-6 flex gap-3">
                   <button
                     onClick={closeModal}
