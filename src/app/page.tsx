@@ -26,13 +26,13 @@ export default function Home() {
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
-      transition: { staggerChildren: isMobile ? 0.12 : 0.2, delayChildren: 0.25 },
+      transition: { staggerChildren: isMobile ? 0.08 : 0.16, delayChildren: 0.18 },
     },
   }
 
   const itemVariants = {
-    hidden: { opacity: 0, y: isMobile ? 12 : 20 },
-    visible: { opacity: 1, y: 0, transition: { duration: isMobile ? 0.55 : 0.8, ease: "easeOut" } },
+    hidden: { opacity: 0, y: isMobile ? 8 : 24, scale: isMobile ? 0.996 : 0.998 },
+    visible: { opacity: 1, y: 0, scale: 1, transition: { duration: isMobile ? 0.5 : 0.75, ease: "easeOut" } },
   }
 
   return (
@@ -47,14 +47,31 @@ export default function Home() {
         }}
       >
 
-        {/* background subtle zoom for mobile */}
+        {/* background multilayer parallax for mobile first */}
         <motion.div
           aria-hidden
           className="absolute inset-0"
-          initial={reduceMotion ? {} : { scale: 1 }}
-          animate={reduceMotion ? {} : { scale: isMobile ? 1.06 : 1 }}
-          transition={{ duration: 8, ease: "linear", repeat: Infinity, repeatType: "reverse" }}
+          initial={reduceMotion ? {} : { scale: 1, y: 0 }}
+          animate={
+            reduceMotion
+              ? {}
+              : {
+                  scale: isMobile ? [1, 1.04, 1] : [1, 1.02, 1],
+                  y: isMobile ? [0, -6, 0] : [0, -3, 0],
+                }
+          }
+          transition={{ duration: 9, ease: "easeInOut", repeat: Infinity, repeatType: "reverse" }}
           style={{ backgroundImage: "inherit", backgroundSize: "cover", backgroundPosition: "center" }}
+        />
+
+        {/* soft vignette layer that pulses */}
+        <motion.div
+          aria-hidden
+          className="absolute inset-0 pointer-events-none"
+          initial={{ opacity: 0.08 }}
+          animate={reduceMotion ? {} : { opacity: [0.08, 0.02, 0.08] }}
+          transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
+          style={{ background: "radial-gradient(ellipse at center, rgba(0,0,0,0.3), transparent 40%)" }}
         />
 
         <motion.div
@@ -64,13 +81,12 @@ export default function Home() {
           animate="visible"
         >
           {/* Badge */}
-          {/* floating badge */}
           <motion.div
             variants={itemVariants}
-            className="inline-block mb-6 glass-strong"
-            style={{ color: "white" }}
-            animate={reduceMotion ? undefined : { y: [0, -6, 0], opacity: [1, 0.95, 1] }}
-            transition={reduceMotion ? undefined : { duration: 3.6, repeat: Infinity, ease: "easeInOut" }}
+            className="inline-block mb-6 glass-strong shadow-lg"
+            style={{ color: "white", transformOrigin: "center" }}
+            animate={reduceMotion ? undefined : { y: [0, -8, 0], rotate: [0, -2, 0], opacity: [1, 0.96, 1] }}
+            transition={reduceMotion ? undefined : { duration: 3.2, repeat: Infinity, ease: "easeInOut" }}
           >
             <span className="px-4 py-2 rounded-full text-sm font-semibold flex items-center gap-2">
               <Sparkles size={16} />
@@ -82,7 +98,9 @@ export default function Home() {
           <motion.h1
             variants={itemVariants}
             className="heading-h1 mb-6"
-            style={{ color: "white" }}
+            style={{ color: "white", textShadow: "0 6px 30px rgba(0,0,0,0.6)" }}
+            animate={reduceMotion ? undefined : { scale: [1, 1.01, 1], rotate: [0, -0.4, 0] }}
+            transition={reduceMotion ? undefined : { duration: 6, repeat: Infinity, ease: "easeInOut" }}
           >
             Where Your Vision Becomes Content
           </motion.h1>
@@ -103,8 +121,9 @@ export default function Home() {
           >
             <Link href="/booking">
               <motion.button
-                whileTap={reduceMotion ? undefined : { scale: isMobile ? 0.97 : 0.985 }}
-                className="btn-primary flex items-center justify-center gap-2 w-full sm:w-auto"
+                whileTap={reduceMotion ? undefined : { scale: isMobile ? 0.97 : 0.985, y: isMobile ? 0 : -1 }}
+                whileHover={reduceMotion ? undefined : { scale: 1.03, y: -2 }}
+                className="btn-primary flex items-center justify-center gap-2 w-full sm:w-auto shadow-2xl"
                 style={{
                   backgroundColor: "var(--cta-primary)",
                   color: "white",
@@ -116,11 +135,12 @@ export default function Home() {
             <Link href="/spaces">
               <motion.button
                 whileTap={reduceMotion ? undefined : { scale: isMobile ? 0.985 : 0.995 }}
+                whileHover={reduceMotion ? undefined : { scale: 1.02 }}
                 className="w-full sm:w-auto px-6 py-3 text-sm font-semibold rounded-lg transition-all"
                 style={{
-                  backgroundColor: "rgba(255, 255, 255, 0.1)",
+                  backgroundColor: "rgba(255, 255, 255, 0.06)",
                   color: "white",
-                  border: "1px solid rgba(255, 255, 255, 0.3)",
+                  border: "1px solid rgba(255, 255, 255, 0.12)",
                 }}
               >
                 Explore Spaces

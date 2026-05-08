@@ -130,12 +130,12 @@ export function Navigation() {
       <AnimatePresence>
         {isOpen && (
             <motion.div
-              initial={{ opacity: 0, height: 0, y: -20 }}
-              animate={{ opacity: 1, height: "auto", y: 0 }}
+              initial={{ opacity: 0, height: 0, y: -20, backdropFilter: "blur(2px)" }}
+              animate={{ opacity: 1, height: "auto", y: 0, backdropFilter: "blur(8px)" }}
               exit={{ opacity: 0, height: 0, y: -20 }}
-              transition={{ duration: 0.3 }}
+              transition={{ duration: 0.28 }}
               style={{
-                backgroundColor: "var(--surface)",
+                backgroundColor: "transparent",
                 borderTop: "1px solid var(--border)",
               }}
             >
