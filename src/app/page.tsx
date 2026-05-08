@@ -5,7 +5,6 @@ import { useEffect, useState } from "react"
 import { motion } from "framer-motion"
 import { ArrowRight, Sparkles, Check, Star } from "lucide-react"
 import { FAQ } from "@/components/FAQ"
-import { Blog } from "@/components/Blog"
 
 export default function Home() {
   const [isMobile, setIsMobile] = useState(false)
@@ -172,82 +171,7 @@ export default function Home() {
         </motion.div>
       </section>
 
-      {/* ===== FEATURED SPACES ===== */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-6xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            viewport={{ once: true }}
-            className="text-center mb-12"
-          >
-            <h2 className="heading-h2 mb-4">Featured Spaces</h2>
-            <p className="text-lg" style={{ color: "var(--text-muted)" }}>
-              Each space is uniquely designed to inspire creativity
-            </p>
-          </motion.div>
-
-          <div className="grid md:grid-cols-3 gap-6">
-            {[
-              {
-                name: "The Bar",
-                desc: "Intimate setting perfect for podcasts and interviews",
-                image: "https://images.unsplash.com/photo-1511379938547-c1f69b13d835?w=500&h=400&fit=crop",
-              },
-              {
-                name: "Green Screen Studio",
-                desc: "Unlimited creative possibilities with professional setup",
-                image: "https://images.unsplash.com/photo-1536968335557-91d2582f3e91?w=500&h=400&fit=crop",
-              },
-              {
-                name: "Vanity Mirror Corner",
-                desc: "Beauty, fashion, and lifestyle content creation",
-                image: "https://images.unsplash.com/photo-1560169897-fc0cdbdfa4d5?w=500&h=400&fit=crop",
-              },
-            ].map((space, idx) => (
-              <motion.div
-                  key={idx}
-                  initial={{ opacity: 0, y: isMobile ? 8 : 26, scale: isMobile ? 0.988 : 0.995, rotate: isMobile ? 0 : -0.6 }}
-                  whileInView={{ opacity: 1, y: 0, scale: 1, rotate: 0 }}
-                  transition={{ duration: isMobile ? 0.45 : 0.7, delay: idx * (isMobile ? 0.05 : 0.12), ease: "cubic-bezier(0.22, 1, 0.36, 1)" }}
-                  viewport={{ once: true }}
-                  className="card card-hover overflow-hidden glass"
-                  style={{
-                    backgroundColor: "var(--surface)",
-                    borderColor: "var(--border)",
-                  }}
-                >
-                {/* Image */}
-                <div
-                  className="w-full h-40 bg-cover bg-center"
-                  style={{
-                    backgroundImage: `url('${space.image}')`,
-                  }}
-                />
-
-                <div className="p-6">
-                  <h3 className="heading-h3 mb-2">{space.name}</h3>
-                  <p className="text-sm mb-4" style={{ color: "var(--text-muted)" }}>
-                    {space.desc}
-                  </p>
-
-                  <Link href="/spaces" className="inline-block mt-4">
-                    <button
-                      className="text-sm font-semibold flex items-center gap-2 transition-colors"
-                      style={{ color: "var(--cta-primary)" }}
-                      onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.7")}
-                      onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
-                    >
-                      View Details <ArrowRight size={16} />
-                    </button>
-                  </Link>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
+      {/* Featured Spaces removed — content moved to dedicated Spaces page */}
 
       {/* ===== WHY CHOOSE US ===== */}
       <section
@@ -408,8 +332,7 @@ export default function Home() {
       {/* ===== FAQ SECTION ===== */}
       <FAQ />
 
-      {/* ===== BLOG SECTION ===== */}
-      <Blog />
+  {/* Blog removed from homepage — see /blog for posts */}
 
       {/* ===== GALLERY SECTION ===== */}
       <section className="py-20 px-4 sm:px-6 lg:px-8">
