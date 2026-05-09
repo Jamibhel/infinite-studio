@@ -667,15 +667,15 @@ export default function SpacesPage() {
                     <div className="grid grid-cols-3 gap-4">
                       <div>
                         <p className="text-sm text-[var(--text-muted)] font-body">Total Bookings</p>
-                        <p className="text-2xl font-bold text-[var(--text-primary)] font-display">{selectedSpace.stats.total_bookings}</p>
+                        <p className="text-2xl font-bold text-[var(--text-primary)] font-display">{selectedSpace?.stats?.total_bookings}</p>
                       </div>
                       <div>
                         <p className="text-sm text-[var(--text-muted)] font-body">Total Revenue</p>
-                        <p className="text-2xl font-bold text-[var(--cta-primary)] font-display">₦{(selectedSpace.stats.total_revenue / 1000).toFixed(1)}K</p>
+                        <p className="text-2xl font-bold text-[var(--cta-primary)] font-display">₦{((selectedSpace?.stats?.total_revenue || 0) / 1000).toFixed(1)}K</p>
                       </div>
                       <div>
                         <p className="text-sm text-[var(--text-muted)] font-body">Occupancy Rate</p>
-                        <p className="text-2xl font-bold text-[var(--text-primary)] font-display">{Math.round(selectedSpace.stats.occupancy_rate)}%</p>
+                        <p className="text-2xl font-bold text-[var(--text-primary)] font-display">{Math.round(selectedSpace?.stats?.occupancy_rate || 0)}%</p>
                       </div>
                     </div>
                   </div>
