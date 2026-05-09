@@ -99,9 +99,9 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
 
           {/* MOBILE HEADER + CONTENT - Only visible on mobile */}
           <div className="flex flex-col flex-1 md:hidden">
-            {/* Mobile Header */}
-            <div className="flex items-center justify-between px-4 py-3 bg-[var(--surface)] border-b border-[var(--border)] shadow-sm">
-              <div>
+            {/* Mobile Header - STICKY */}
+            <div className="sticky top-0 z-40 flex items-center justify-between px-4 py-4 bg-[var(--surface)] border-b border-[var(--border)] shadow-md">
+              <div className="flex-1">
                 <h1 className="font-display text-lg font-bold text-[var(--text-primary)]">Infinite</h1>
                 <p className="font-body text-xs text-[var(--text-muted)]">{currentPage.label}</p>
               </div>
@@ -110,65 +110,69 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
                 <button
                   onClick={toggleTheme}
                   className="p-2 hover:bg-[var(--bg)] rounded-soft transition-colors"
+                  title="Toggle theme"
                 >
                   {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
                 </button>
 
                 <button
                   onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                  className="p-2 hover:bg-[var(--bg)] rounded-soft transition-colors"
+                  className="p-2 hover:bg-[var(--cta-primary)] hover:text-white rounded-soft transition-colors text-[var(--text-primary)]"
+                  title="Toggle menu"
                 >
                   {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
                 </button>
               </div>
             </div>
 
-            {/* Mobile Dropdown Menu */}
+            {/* Mobile Dropdown Menu - FULL WIDTH */}
             <AnimatePresence>
               {mobileMenuOpen && (
                 <motion.div
-                  initial={{ opacity: 0, y: -10, height: 0 }}
+                  initial={{ opacity: 0, y: -20, height: 0 }}
                   animate={{ opacity: 1, y: 0, height: "auto" }}
-                  exit={{ opacity: 0, y: -10, height: 0 }}
-                  transition={{ duration: 0.2 }}
-                  className="border-b border-[var(--border)] bg-[var(--surface)] px-4 py-3 space-y-2 z-50 shadow-lg max-h-96 overflow-y-auto"
+                  exit={{ opacity: 0, y: -20, height: 0 }}
+                  transition={{ duration: 0.25, ease: "easeInOut" }}
+                  className="z-30 border-b border-[var(--border)] bg-[var(--surface)] shadow-lg max-h-[calc(100vh-80px)] overflow-y-auto"
                 >
-                  {navItems.map((item) => {
-                    const Icon = item.icon
-                    return (
-                      <Link
-                        key={item.href}
-                        href={item.href}
-                        onClick={() => setMobileMenuOpen(false)}
-                        className={`flex items-center justify-between px-4 py-3 rounded-soft transition-all font-body text-sm ${
-                          isActive(item.href)
-                            ? "bg-[var(--cta-primary)] text-white"
-                            : "text-[var(--text-primary)] hover:bg-[var(--bg)]"
-                        }`}
-                      >
-                        <span className="flex items-center gap-3">
-                          <Icon size={16} />
-                          {item.label}
-                        </span>
-                        <ChevronRight size={16} />
-                      </Link>
-                    )
-                  })}
+                  <nav className="px-2 py-3 space-y-1">
+                    {navItems.map((item) => {
+                      const Icon = item.icon
+                      return (
+                        <Link
+                          key={item.href}
+                          href={item.href}
+                          onClick={() => setMobileMenuOpen(false)}
+                          className={`flex items-center justify-between px-4 py-3 rounded-lg transition-all font-body text-sm ${
+                            isActive(item.href)
+                              ? "bg-[var(--cta-primary)] text-white shadow-md"
+                              : "text-[var(--text-primary)] hover:bg-[var(--bg)] active:bg-[var(--border)]"
+                          }`}
+                        >
+                          <span className="flex items-center gap-3">
+                            <Icon size={18} />
+                            <span className="font-medium">{item.label}</span>
+                          </span>
+                          {isActive(item.href) && <ChevronRight size={16} />}
+                        </Link>
+                      )
+                    })}
+                  </nav>
 
-                  <div className="border-t border-[var(--border)] pt-3 mt-3 space-y-2">
+                  <div className="border-t border-[var(--border)] px-2 py-3 mt-2 space-y-2">
                     <button
                       onClick={toggleTheme}
-                      className="w-full flex items-center gap-3 px-4 py-3 rounded-soft hover:bg-[var(--bg)] transition-colors text-[var(--text-primary)] font-body text-sm"
+                      className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-[var(--bg)] transition-colors text-[var(--text-primary)] font-body text-sm active:bg-[var(--border)]"
                     >
-                      {theme === 'light' ? <Moon size={16} /> : <Sun size={16} />}
+                      {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
                       <span>{theme === 'light' ? 'Dark Mode' : 'Light Mode'}</span>
                     </button>
 
                     <button
                       onClick={handleLogout}
-                      className="w-full flex items-center gap-3 px-4 py-3 rounded-soft bg-[var(--cta-primary)] hover:bg-[var(--cta-hover)] transition-colors text-white font-body text-sm"
+                      className="w-full flex items-center gap-3 px-4 py-3 rounded-lg bg-[var(--cta-primary)] hover:bg-[var(--cta-hover)] transition-colors text-white font-body text-sm active:opacity-80"
                     >
-                      <LogOut size={16} />
+                      <LogOut size={18} />
                       <span>Logout</span>
                     </button>
                   </div>
