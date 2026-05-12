@@ -1,18 +1,11 @@
 "use client"
 
 import { AdminLayout } from "@/components/AdminLayout"
-import { motion } from "framer-motion"
-import { Trash2, Edit2, AlertCircle } from "lucide-react"
+import { motion, AnimatePresence } from "framer-motion"
+import { Trash2, Calendar, Phone, Mail, Users, ChevronDown, RefreshCw, X, CheckCircle2, Clock, BarChart3 } from "lucide-react"
 import { useState, useEffect } from "react"
 import { createClient } from "@supabase/supabase-js"
 import toast from "react-hot-toast"
-
-interface Addon {
-  id: string
-  name: string
-  price: number
-  quantity: number
-}
 
 interface Booking {
   id: string
@@ -20,230 +13,326 @@ interface Booking {
   email: string
   phone: string
   spaces: string[]
-  date: string
-  time: string
+  preferred_date: string
+  preferred_time: string
   status: "pending" | "confirmed" | "completed"
   group_size: number
-  addons?: Addon[]
+  notes?: string
+  created_at: string
+}
+
+const statusConfig = {
+  pending: { label: "Pending", bg: "rgba(245,158,11,0.12)", color: "#F59E0B", icon: Clock },
+  confirmed: { label: "Confirmed", bg: "rgba(16,185,129,0.12)", color: "#10B981", icon: CheckCircle2 },
+  completed: { label: "Completed", bg: "rgba(139,92,246,0.12)", color: "#8B5CF6", icon: BarChart3 },
 }
 
 export default function BookingsPage() {
   const [bookings, setBookings] = useState<Booking[]>([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState("")
+  const [filter, setFilter] = useState<"all" | "pending" | "confirmed" | "completed">("all")
+  const [selected, setSelected] = useState<Booking | null>(null)
 
-  // Initialize Supabase client
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL || "",
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ""
   )
 
-  // Fetch bookings
-  useEffect(() => {
-    fetchBookings()
-  }, [])
+  useEffect(() => { fetchBookings() }, [])
 
   const fetchBookings = async () => {
     try {
       setLoading(true)
-      const { data, error: fetchError } = await supabase
+      const { data, error } = await supabase
         .from("bookings")
         .select("*")
-        .order("date", { ascending: false })
-
-      if (fetchError) throw fetchError
-
-      setBookings(
-        (data || []).map((booking: any) => ({
-          id: booking.id,
-          name: booking.name,
-          email: booking.email,
-          phone: booking.phone,
-          spaces: booking.spaces || [],
-          date: booking.date,
-          time: booking.time || "Not specified",
-          status: booking.status || "pending",
-          group_size: booking.group_size || 1,
-          addons: booking.addons || [],
-        }))
-      )
-      setError("")
-    } catch (err) {
-      console.error("Error fetching bookings:", err)
-      setError("Failed to load bookings")
+        .order("created_at", { ascending: false })
+      if (error) throw error
+      setBookings((data || []).map((b: any) => ({
+        id: b.id,
+        name: b.name,
+        email: b.email,
+        phone: b.phone || "—",
+        spaces: b.spaces || [],
+        preferred_date: b.preferred_date || b.date || "—",
+        preferred_time: b.preferred_time || b.time || "—",
+        status: b.status || "pending",
+        group_size: b.group_size || 1,
+        notes: b.notes || "",
+        created_at: b.created_at,
+      })))
+    } catch {
       toast.error("Failed to load bookings")
     } finally {
       setLoading(false)
     }
   }
 
-  const updateStatus = async (bookingId: string, newStatus: string) => {
+  const updateStatus = async (id: string, status: string) => {
     try {
-      const { error: updateError } = await supabase
-        .from("bookings")
-        .update({ status: newStatus })
-        .eq("id", bookingId)
-
-      if (updateError) throw updateError
-
-      // Update local state
-      setBookings(
-        bookings.map((booking) =>
-          booking.id === bookingId
-            ? { ...booking, status: newStatus as "pending" | "confirmed" | "completed" }
-            : booking
-        )
-      )
-      toast.success("Status updated successfully")
-    } catch (err) {
-      console.error("Error updating status:", err)
+      const { error } = await supabase.from("bookings").update({ status }).eq("id", id)
+      if (error) throw error
+      setBookings(prev => prev.map(b => b.id === id ? { ...b, status: status as any } : b))
+      if (selected?.id === id) setSelected(prev => prev ? { ...prev, status: status as any } : null)
+      toast.success("Status updated")
+    } catch {
       toast.error("Failed to update status")
     }
   }
 
-  const deleteBooking = async (bookingId: string) => {
-    if (!window.confirm("Are you sure you want to delete this booking?")) return
-
+  const deleteBooking = async (id: string) => {
+    if (!confirm("Delete this booking?")) return
     try {
-      const { error: deleteError } = await supabase
-        .from("bookings")
-        .delete()
-        .eq("id", bookingId)
-
-      if (deleteError) throw deleteError
-
-      setBookings(bookings.filter((booking) => booking.id !== bookingId))
-      toast.success("Booking deleted successfully")
-    } catch (err) {
-      console.error("Error deleting booking:", err)
+      const { error } = await supabase.from("bookings").delete().eq("id", id)
+      if (error) throw error
+      setBookings(prev => prev.filter(b => b.id !== id))
+      if (selected?.id === id) setSelected(null)
+      toast.success("Booking deleted")
+    } catch {
       toast.error("Failed to delete booking")
     }
   }
 
-  const statusColors = {
-    pending: "bg-yellow-100 text-yellow-800",
-    confirmed: "bg-green-100 text-green-800",
-    completed: "bg-blue-100 text-blue-800",
-  }
+  const filtered = bookings.filter(b => filter === "all" || b.status === filter)
 
-  const calculateAddonsSubtotal = (addons?: Addon[]): number => {
-    if (!addons || addons.length === 0) return 0
-    return addons.reduce((sum, addon) => sum + addon.price * addon.quantity, 0)
+  const counts = {
+    all: bookings.length,
+    pending: bookings.filter(b => b.status === "pending").length,
+    confirmed: bookings.filter(b => b.status === "confirmed").length,
+    completed: bookings.filter(b => b.status === "completed").length,
   }
 
   return (
     <AdminLayout>
-      <div className="space-y-6">
-        <div className="flex justify-between items-center">
+      <div className="space-y-5 max-w-5xl">
+
+        {/* Header */}
+        <div className="flex items-center justify-between">
           <div>
-            <h1 className="heading-h1 mb-2">Bookings Manager</h1>
-            <p className="body-text text-[var(--text-muted)]">Manage all studio bookings</p>
+            <h2 className="font-display text-3xl font-bold" style={{ color: "var(--text-primary)" }}>Bookings</h2>
+            <p className="text-sm mt-1 font-body" style={{ color: "var(--text-muted)" }}>{bookings.length} total sessions</p>
           </div>
           <button
             onClick={fetchBookings}
-            className="px-4 py-2 bg-[var(--cta-primary)] text-white rounded-lg hover:bg-[var(--cta-hover)] transition-colors"
+            className="w-9 h-9 rounded-xl flex items-center justify-center border transition-all"
+            style={{ background: "var(--surface)", borderColor: "var(--border)", color: "var(--text-muted)" }}
           >
-            Refresh
+            <RefreshCw size={15} />
           </button>
         </div>
 
-        {error && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="p-4 bg-red-50 border border-red-200 rounded-lg flex gap-3"
-          >
-            <AlertCircle className="text-red-500 flex-shrink-0 w-5 h-5 mt-0.5" />
-            <div>
-              <p className="text-red-700 font-semibold font-body">Error Loading Bookings</p>
-              <p className="text-red-600 text-sm font-body">{error}</p>
-            </div>
-          </motion.div>
-        )}
+        {/* Filter Pills */}
+        <div className="flex gap-2 overflow-x-auto pb-1">
+          {(["all", "pending", "confirmed", "completed"] as const).map(f => (
+            <motion.button
+              key={f}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setFilter(f)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wide whitespace-nowrap transition-all border"
+              style={{
+                background: filter === f ? "var(--cta-primary)" : "var(--surface)",
+                color: filter === f ? "#fff" : "var(--text-muted)",
+                borderColor: filter === f ? "var(--cta-primary)" : "var(--border)",
+                boxShadow: filter === f ? "0 3px 12px rgba(196,98,58,0.3)" : "none",
+              }}
+            >
+              {f === "all" ? "All" : f} <span className="opacity-70">({counts[f]})</span>
+            </motion.button>
+          ))}
+        </div>
 
+        {/* Booking Cards */}
         {loading ? (
-          <div className="flex justify-center items-center h-64">
-            <div className="animate-spin rounded-full h-12 w-12 border-4 border-[var(--border)] border-t-[var(--cta-primary)]"></div>
+          <div className="flex items-center justify-center py-16">
+            <div className="w-7 h-7 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: "var(--cta-primary)" }} />
           </div>
-        ) : bookings.length === 0 ? (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="bg-[var(--surface)] rounded-lg border border-[var(--border)] p-12 text-center"
-          >
-            <p className="body-text text-[var(--text-muted)] text-lg">No bookings yet</p>
-          </motion.div>
+        ) : filtered.length === 0 ? (
+          <div className="text-center py-16 rounded-2xl border" style={{ background: "var(--surface)", borderColor: "var(--border)" }}>
+            <Calendar size={36} className="mx-auto mb-3" style={{ color: "var(--text-muted)" }} />
+            <p className="text-sm font-body" style={{ color: "var(--text-muted)" }}>No {filter !== "all" ? filter : ""} bookings yet</p>
+          </div>
         ) : (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-[var(--surface)] rounded-lg border border-[var(--border)] overflow-hidden"
-          >
-            <table className="w-full">
-              <thead className="bg-[var(--bg)] border-b border-[var(--border)]">
-                <tr>
-                  <th className="px-6 py-3 text-left font-semibold text-sm text-[var(--text-primary)]">Client</th>
-                  <th className="px-6 py-3 text-left font-semibold text-sm text-[var(--text-primary)]">Spaces</th>
-                  <th className="px-6 py-3 text-left font-semibold text-sm text-[var(--text-primary)]">Date & Time</th>
-                  <th className="px-6 py-3 text-left font-semibold text-sm text-[var(--text-primary)]">Group Size</th>
-                  <th className="px-6 py-3 text-left font-semibold text-sm text-[var(--text-primary)]">Status</th>
-                  <th className="px-6 py-3 text-left font-semibold text-sm text-[var(--text-primary)]">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {bookings.map((booking, i) => (
-                  <tr key={booking.id} className="border-b border-[var(--border)] hover:bg-[var(--bg)] transition-colors">
-                    <td className="px-6 py-4">
-                      <div>
-                        <p className="font-semibold text-sm text-[var(--text-primary)]">{booking.name}</p>
-                        <p className="text-xs text-[var(--text-muted)]">{booking.email}</p>
-                        <p className="text-xs text-[var(--text-muted)]">{booking.phone}</p>
+          <div className="space-y-3">
+            {filtered.map((booking, i) => {
+              const s = statusConfig[booking.status]
+              const Icon = s.icon
+              return (
+                <motion.div
+                  key={booking.id}
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.04 }}
+                  onClick={() => setSelected(booking)}
+                  className="rounded-2xl border p-4 cursor-pointer transition-all"
+                  style={{
+                    background: "var(--surface)",
+                    borderColor: "var(--border)",
+                    boxShadow: "0 2px 10px rgba(0,0,0,0.05)",
+                  }}
+                  whileHover={{ y: -2, boxShadow: "0 8px 24px rgba(0,0,0,0.1)" }}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="w-10 h-10 rounded-full flex-shrink-0 flex items-center justify-center text-white font-bold text-sm"
+                        style={{ background: "var(--cta-primary)" }}>
+                        {booking.name[0]?.toUpperCase()}
                       </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex gap-1 flex-wrap">
-                        {booking.spaces.map((space) => (
-                          <span key={space} className="text-xs bg-[var(--cta-primary)] bg-opacity-20 text-[var(--cta-primary)] px-2 py-1 rounded-full font-semibold">
-                            {space}
-                          </span>
-                        ))}
+                      <div className="min-w-0">
+                        <p className="font-bold text-sm font-body truncate" style={{ color: "var(--text-primary)" }}>{booking.name}</p>
+                        <p className="text-xs font-body truncate" style={{ color: "var(--text-muted)" }}>{booking.email}</p>
                       </div>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-[var(--text-primary)]">
-                      {booking.date} · {booking.time}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-[var(--text-primary)]">{booking.group_size} people</td>
-                    <td className="px-6 py-4">
-                      <select
-                        value={booking.status}
-                        onChange={(e) => updateStatus(booking.id, e.target.value)}
-                        className={`text-xs px-3 py-1 rounded-full font-semibold cursor-pointer border border-[var(--border)] text-[var(--text-primary)] bg-[var(--bg)] focus:outline-none focus:ring-2 focus:ring-[var(--cta-primary)] ${
-                          statusColors[booking.status]
-                        }`}
-                      >
-                        <option value="pending">Pending</option>
-                        <option value="confirmed">Confirmed</option>
-                        <option value="completed">Completed</option>
-                      </select>
-                    </td>
-                    <td className="px-6 py-4 flex gap-2">
-                      <button className="p-2 hover:bg-[var(--cta-primary)] hover:bg-opacity-20 rounded-lg text-[var(--cta-primary)] transition-colors">
-                        <Edit2 size={16} />
-                      </button>
-                      <button
-                        onClick={() => deleteBooking(booking.id)}
-                        className="p-2 hover:bg-red-100 dark:hover:bg-red-900 rounded-lg text-red-600 dark:text-red-400 transition-colors"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </motion.div>
+                    </div>
+                    <span className="flex-shrink-0 flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-full"
+                      style={{ background: s.bg, color: s.color }}>
+                      <Icon size={10} /> {s.label}
+                    </span>
+                  </div>
+
+                  <div className="mt-3 flex flex-wrap gap-1.5">
+                    {booking.spaces.map(sp => (
+                      <span key={sp} className="text-[10px] font-semibold px-2 py-0.5 rounded-full"
+                        style={{ background: "rgba(196,98,58,0.1)", color: "var(--cta-primary)" }}>
+                        {sp}
+                      </span>
+                    ))}
+                  </div>
+
+                  <div className="mt-3 flex items-center gap-3 text-xs font-body" style={{ color: "var(--text-muted)" }}>
+                    <span className="flex items-center gap-1"><Calendar size={11} /> {booking.preferred_date}</span>
+                    <span className="flex items-center gap-1"><Users size={11} /> {booking.group_size} people</span>
+                  </div>
+                </motion.div>
+              )
+            })}
+          </div>
         )}
       </div>
+
+      {/* Detail Sheet */}
+      <AnimatePresence>
+        {selected && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/40 z-50"
+              onClick={() => setSelected(null)}
+            />
+            <motion.div
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{ type: "spring", damping: 28, stiffness: 260 }}
+              className="fixed bottom-0 left-0 right-0 z-50 rounded-t-3xl overflow-hidden max-h-[85vh] overflow-y-auto"
+              style={{ background: "var(--surface)" }}
+            >
+              {/* Handle */}
+              <div className="flex justify-center pt-3 pb-1">
+                <div className="w-10 h-1 rounded-full" style={{ background: "var(--border)" }} />
+              </div>
+
+              <div className="px-5 pb-8 pt-2">
+                {/* Sheet Header */}
+                <div className="flex items-start justify-between mb-5">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-lg"
+                      style={{ background: "var(--cta-primary)" }}>
+                      {selected.name[0]?.toUpperCase()}
+                    </div>
+                    <div>
+                      <h3 className="font-display text-xl font-bold" style={{ color: "var(--text-primary)" }}>{selected.name}</h3>
+                      <p className="text-sm font-body" style={{ color: "var(--text-muted)" }}>{selected.email}</p>
+                    </div>
+                  </div>
+                  <button onClick={() => setSelected(null)} className="p-2 rounded-xl" style={{ background: "var(--bg)", color: "var(--text-muted)" }}>
+                    <X size={16} />
+                  </button>
+                </div>
+
+                {/* Info Grid */}
+                <div className="grid grid-cols-2 gap-3 mb-5">
+                  {[
+                    { label: "Phone", value: selected.phone, icon: Phone },
+                    { label: "Group Size", value: `${selected.group_size} people`, icon: Users },
+                    { label: "Date", value: selected.preferred_date, icon: Calendar },
+                    { label: "Time", value: selected.preferred_time, icon: Clock },
+                  ].map(item => {
+                    const Icon = item.icon
+                    return (
+                      <div key={item.label} className="rounded-xl p-3 border" style={{ background: "var(--bg)", borderColor: "var(--border)" }}>
+                        <div className="flex items-center gap-1.5 mb-1">
+                          <Icon size={11} style={{ color: "var(--cta-primary)" }} />
+                          <p className="text-[10px] uppercase tracking-wide font-semibold" style={{ color: "var(--text-muted)" }}>{item.label}</p>
+                        </div>
+                        <p className="text-sm font-bold font-body" style={{ color: "var(--text-primary)" }}>{item.value}</p>
+                      </div>
+                    )
+                  })}
+                </div>
+
+                {/* Spaces */}
+                <div className="mb-5">
+                  <p className="text-xs uppercase tracking-wide font-semibold mb-2" style={{ color: "var(--text-muted)" }}>Spaces</p>
+                  <div className="flex flex-wrap gap-2">
+                    {selected.spaces.map(sp => (
+                      <span key={sp} className="px-3 py-1 rounded-full text-xs font-bold"
+                        style={{ background: "rgba(196,98,58,0.12)", color: "var(--cta-primary)" }}>
+                        {sp}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Notes */}
+                {selected.notes && (
+                  <div className="mb-5 p-3 rounded-xl border" style={{ background: "var(--bg)", borderColor: "var(--border)" }}>
+                    <p className="text-[10px] uppercase tracking-wide font-semibold mb-1" style={{ color: "var(--text-muted)" }}>Notes</p>
+                    <p className="text-sm font-body" style={{ color: "var(--text-primary)" }}>{selected.notes}</p>
+                  </div>
+                )}
+
+                {/* Status Update */}
+                <div className="mb-4">
+                  <p className="text-xs uppercase tracking-wide font-semibold mb-2" style={{ color: "var(--text-muted)" }}>Update Status</p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {(["pending", "confirmed", "completed"] as const).map(s => {
+                      const cfg = statusConfig[s]
+                      const Icon = cfg.icon
+                      return (
+                        <motion.button
+                          key={s}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => updateStatus(selected.id, s)}
+                          className="flex flex-col items-center gap-1 p-3 rounded-xl border transition-all"
+                          style={{
+                            background: selected.status === s ? cfg.bg : "var(--bg)",
+                            borderColor: selected.status === s ? cfg.color : "var(--border)",
+                            color: selected.status === s ? cfg.color : "var(--text-muted)",
+                          }}
+                        >
+                          <Icon size={16} />
+                          <span className="text-[10px] font-bold uppercase tracking-wide">{cfg.label}</span>
+                        </motion.button>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                {/* Delete */}
+                <motion.button
+                  whileTap={{ scale: 0.97 }}
+                  onClick={() => deleteBooking(selected.id)}
+                  className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border text-sm font-bold font-body transition-all"
+                  style={{ borderColor: "rgba(239,68,68,0.3)", color: "#EF4444", background: "rgba(239,68,68,0.06)" }}
+                >
+                  <Trash2 size={15} /> Delete Booking
+                </motion.button>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </AdminLayout>
   )
 }

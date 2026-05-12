@@ -4,7 +4,7 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { motion } from "framer-motion"
-import { Eye, EyeOff, AlertCircle } from "lucide-react"
+import { Eye, EyeOff, AlertCircle, ArrowLeft } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
 
 export default function AdminLogin() {
@@ -20,84 +20,102 @@ export default function AdminLogin() {
     e.preventDefault()
     setError("")
     setIsLoading(true)
-
     try {
-      // Call the login function from auth context
       const success = await login(email, password)
       if (success) {
         router.push("/admin")
       } else {
-        setError("Invalid email or password")
+        setError("Invalid credentials. Please try again.")
       }
-    } catch (err) {
+    } catch {
       setError("An error occurred. Please try again.")
-      console.error(err)
     } finally {
       setIsLoading(false)
     }
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-light-bg via-light-bg to-dark-stone/10 flex items-center justify-center p-4">
+    <div className="min-h-screen flex flex-col items-center justify-center p-5 relative overflow-hidden"
+      style={{ background: "var(--bg)" }}>
+
+      {/* Background orbs */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute -top-32 -right-32 w-80 h-80 rounded-full opacity-20"
+          style={{ background: "radial-gradient(circle, var(--cta-primary), transparent)" }} />
+        <div className="absolute -bottom-32 -left-32 w-96 h-96 rounded-full opacity-10"
+          style={{ background: "radial-gradient(circle, var(--cta-hover), transparent)" }} />
+      </div>
+
+      {/* Back link */}
+      <div className="absolute top-6 left-6">
+        <Link href="/" className="flex items-center gap-2 text-sm font-body transition-all"
+          style={{ color: "var(--text-muted)" }}>
+          <ArrowLeft size={15} /> Back to site
+        </Link>
+      </div>
+
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 0, y: 24 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="w-full max-w-md"
+        transition={{ duration: 0.5, ease: "easeOut" }}
+        className="w-full max-w-sm relative z-10"
       >
-        {/* Header */}
+        {/* Brand */}
         <div className="text-center mb-8">
-          <Link href="/" className="inline-block mb-6">
-            <motion.div
-              whileHover={{ scale: 1.05 }}
-              className="text-4xl font-bold text-dark-text"
-            >
-              ∞
-            </motion.div>
-          </Link>
-          <h1 className="text-3xl font-bold text-dark-text mb-2">Admin Access</h1>
-          <p className="text-gray-500">Manage Infinite Studio content</p>
+          <motion.div
+            initial={{ scale: 0.8 }}
+            animate={{ scale: 1 }}
+            transition={{ delay: 0.1, type: "spring" }}
+            className="w-16 h-16 rounded-2xl flex items-center justify-center text-white font-bold text-3xl mx-auto mb-4"
+            style={{ background: "linear-gradient(135deg, var(--cta-primary), var(--cta-hover))", boxShadow: "0 10px 40px rgba(196,98,58,0.4)" }}
+          >
+            ∞
+          </motion.div>
+          <h1 className="font-display text-3xl font-bold" style={{ color: "var(--text-primary)" }}>Admin Access</h1>
+          <p className="text-sm mt-1 font-body" style={{ color: "var(--text-muted)" }}>Infinite Studio Control Center</p>
         </div>
 
-        {/* Login Card */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-          className="bg-white/80 backdrop-blur-sm border border-gray-200 rounded-lg p-8 shadow-lg"
-        >
-          {/* Error Message */}
+        {/* Card */}
+        <div className="rounded-3xl border p-6 backdrop-blur-sm"
+          style={{ background: "var(--surface)", borderColor: "var(--border)", boxShadow: "0 20px 60px rgba(0,0,0,0.12)" }}>
+
+          {/* Error */}
           {error && (
             <motion.div
-              initial={{ opacity: 0, y: -10 }}
+              initial={{ opacity: 0, y: -8 }}
               animate={{ opacity: 1, y: 0 }}
-              className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex gap-3"
+              className="flex items-start gap-3 p-3.5 rounded-xl border mb-4"
+              style={{ background: "rgba(239,68,68,0.06)", borderColor: "rgba(239,68,68,0.2)" }}
             >
-              <AlertCircle className="text-red-500 flex-shrink-0 w-5 h-5 mt-0.5" />
-              <p className="text-red-700 text-sm">{error}</p>
+              <AlertCircle size={15} className="flex-shrink-0 mt-0.5" style={{ color: "#EF4444" }} />
+              <p className="text-xs font-body" style={{ color: "#EF4444" }}>{error}</p>
             </motion.div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit} className="space-y-4">
             {/* Email */}
             <div>
-              <label htmlFor="email" className="block text-sm font-semibold text-dark-text mb-2">
-                Email
+              <label className="block text-xs uppercase tracking-wide font-semibold mb-2 font-body" style={{ color: "var(--text-muted)" }}>
+                Email Address
               </label>
               <input
                 id="email"
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={e => setEmail(e.target.value)}
                 placeholder="admin@infinitestudio.com"
                 required
-                className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-dark-accent focus:bg-white transition"
+                autoComplete="email"
+                className="w-full px-4 py-3 rounded-xl border text-sm font-body transition-all focus:outline-none"
+                style={{ background: "var(--bg)", borderColor: "var(--border)", color: "var(--text-primary)" }}
+                onFocus={e => (e.target.style.borderColor = "var(--cta-primary)")}
+                onBlur={e => (e.target.style.borderColor = "var(--border)")}
               />
             </div>
 
             {/* Password */}
             <div>
-              <label htmlFor="password" className="block text-sm font-semibold text-dark-text mb-2">
+              <label className="block text-xs uppercase tracking-wide font-semibold mb-2 font-body" style={{ color: "var(--text-muted)" }}>
                 Password
               </label>
               <div className="relative">
@@ -105,51 +123,47 @@ export default function AdminLogin() {
                   id="password"
                   type={showPassword ? "text" : "password"}
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={e => setPassword(e.target.value)}
                   placeholder="••••••••"
                   required
-                  className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-dark-accent focus:bg-white transition"
+                  autoComplete="current-password"
+                  className="w-full px-4 py-3 pr-12 rounded-xl border text-sm font-body transition-all focus:outline-none"
+                  style={{ background: "var(--bg)", borderColor: "var(--border)", color: "var(--text-primary)" }}
+                  onFocus={e => (e.target.style.borderColor = "var(--cta-primary)")}
+                  onBlur={e => (e.target.style.borderColor = "var(--border)")}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 w-7 h-7 flex items-center justify-center rounded-lg"
+                  style={{ color: "var(--text-muted)" }}
                 >
-                  {showPassword ? (
-                    <EyeOff className="w-5 h-5" />
-                  ) : (
-                    <Eye className="w-5 h-5" />
-                  )}
+                  {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
                 </button>
               </div>
             </div>
 
-            {/* Submit Button */}
+            {/* Submit */}
             <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
+              whileHover={{ y: -2, boxShadow: "0 12px 32px rgba(196,98,58,0.4)" }}
+              whileTap={{ scale: 0.97 }}
               type="submit"
               disabled={isLoading}
-              className="w-full py-3 bg-dark-accent text-white font-semibold rounded-lg hover:bg-opacity-90 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full py-3.5 rounded-xl text-white font-bold text-sm font-body transition-all mt-2 flex items-center justify-center gap-2"
+              style={{ background: "linear-gradient(135deg, var(--cta-primary), var(--cta-hover))" }}
             >
-              {isLoading ? "Signing in..." : "Sign In"}
+              {isLoading ? (
+                <div className="w-5 h-5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+              ) : "Sign In to Dashboard"}
             </motion.button>
           </form>
 
-          {/* Demo Credentials */}
-          <div className="mt-6 p-4 bg-amber-50 border border-amber-200 rounded-lg">
-            <p className="text-xs font-semibold text-amber-900 mb-2">ℹ️ Real Authentication</p>
-            <p className="text-xs text-amber-800">
-              Use your Supabase authentication credentials to sign in to the admin panel.
+          {/* Info note */}
+          <div className="mt-4 p-3 rounded-xl border" style={{ background: "var(--bg)", borderColor: "var(--border)" }}>
+            <p className="text-[10px] font-body text-center" style={{ color: "var(--text-muted)" }}>
+              Use your Supabase authentication credentials to access the admin panel.
             </p>
           </div>
-        </motion.div>
-
-        {/* Back Link */}
-        <div className="text-center mt-8">
-          <Link href="/" className="text-gray-600 hover:text-dark-accent transition text-sm">
-            Back to website
-          </Link>
         </div>
       </motion.div>
     </div>
