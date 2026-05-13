@@ -1,8 +1,8 @@
 "use client"
 
 import Link from "next/link"
-import { useEffect, useState } from "react"
-import { motion } from "framer-motion"
+import { useEffect, useState, useRef } from "react"
+import { motion, useScroll, useTransform } from "framer-motion"
 import { ArrowRight, Sparkles, Check, Star, GalleryHorizontal, Film } from "lucide-react"
 import { FAQ } from "@/components/FAQ"
 import { useSettings } from "@/lib/settings-context"
@@ -24,6 +24,19 @@ export default function Home() {
   const { settings, loading } = useSettings()
   const [galleryItems, setGalleryItems] = useState<GalleryItem[]>([])
   const [galleryLoading, setGalleryLoading] = useState(true)
+
+  const heroRef = useRef<HTMLElement>(null)
+  const { scrollYProgress } = useScroll({
+    target: heroRef,
+    offset: ["start start", "end start"]
+  })
+
+  // Deep parallax for the background
+  const bgY = useTransform(scrollYProgress, [0, 1], ["0%", "50%"])
+  
+  // Fade and scale down the content as it scrolls out of view
+  const heroOpacity = useTransform(scrollYProgress, [0, 0.8], [1, 0])
+  const heroScale = useTransform(scrollYProgress, [0, 1], [1, 0.8])
 
   useEffect(() => {
     const onResize = () => setIsMobile(window.innerWidth <= 640)
@@ -98,10 +111,14 @@ export default function Home() {
     visible: { opacity: 1, y: 0, scale: 1, transition: { duration: isMobile ? 0.5 : 0.75, ease: "easeOut" } },
   }
 
+  const marqueeText = settings.marquee_text ? settings.marquee_text.split("·")[0].trim() || "Where Your Vision Becomes Content" : "Where Your Vision Becomes Content"
+  const headingWords = marqueeText.split(" ")
+
   return (
     <div style={{ backgroundColor: "var(--bg)", color: "var(--text-primary)" }}>
       {/* ===== HERO SECTION ===== */}
       <section
+        ref={heroRef}
         className="relative min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8 py-20 mt-16 bg-cover bg-center overflow-hidden"
         style={{
           backgroundImage:
@@ -114,17 +131,14 @@ export default function Home() {
         <motion.div
           aria-hidden
           className="absolute inset-0"
-          initial={reduceMotion ? {} : { scale: 1, y: 0 }}
-          animate={
-            reduceMotion
-              ? {}
-              : {
-                  scale: isMobile ? [1, 1.04, 1] : [1, 1.02, 1],
-                  y: isMobile ? [0, -6, 0] : [0, -3, 0],
-                }
-          }
-          transition={{ duration: 9, ease: "easeInOut", repeat: Infinity, repeatType: "reverse" }}
-          style={{ backgroundImage: "inherit", backgroundSize: "cover", backgroundPosition: "center" }}
+          initial={{ scale: 1.05 }}
+          style={{ 
+            backgroundImage: "inherit", 
+            backgroundSize: "cover", 
+            backgroundPosition: "center",
+            y: reduceMotion ? 0 : bgY,
+            willChange: "transform"
+          }}
         />
 
         {/* soft vignette layer that pulses */}
@@ -142,6 +156,11 @@ export default function Home() {
           variants={containerVariants}
           initial="hidden"
           animate="visible"
+          style={{
+            opacity: heroOpacity,
+            scale: heroScale,
+            willChange: "transform, opacity"
+          }}
         >
           {/* Badge */}
           <motion.div
@@ -158,15 +177,29 @@ export default function Home() {
           </motion.div>
 
           {/* Main Heading */}
-          <motion.h1
-            variants={itemVariants}
-            className="heading-h1 mb-6"
+          <h1
+            className="heading-h1 mb-6 flex flex-wrap justify-center gap-x-3 gap-y-2"
             style={{ color: "white", textShadow: "0 6px 30px rgba(0,0,0,0.6)" }}
-            animate={reduceMotion ? undefined : { scale: [1, 1.01, 1], rotate: [0, -0.4, 0] }}
-            transition={reduceMotion ? undefined : { duration: 6, repeat: Infinity, ease: "easeInOut" }}
           >
-            {settings.marquee_text ? settings.marquee_text.split("·")[0].trim() || "Where Your Vision Becomes Content" : "Where Your Vision Becomes Content"}
-          </motion.h1>
+            {headingWords.map((word, i) => (
+              <span key={i} className="overflow-hidden inline-block px-1">
+                <motion.span
+                  className="inline-block"
+                  initial={reduceMotion ? { opacity: 0 } : { y: "100%", rotate: 4 }}
+                  animate={reduceMotion ? { opacity: 1 } : { y: 0, rotate: 0 }}
+                  transition={{
+                    type: "spring",
+                    damping: 18,
+                    stiffness: 100,
+                    delay: 0.1 + i * 0.08
+                  }}
+                  style={{ willChange: "transform, opacity" }}
+                >
+                  {word}
+                </motion.span>
+              </span>
+            ))}
+          </h1>
 
           {/* Subheading */}
           <motion.p
@@ -285,10 +318,18 @@ export default function Home() {
             ].map((feature, idx) => (
               <motion.div
                 key={idx}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: idx * 0.1 }}
-                viewport={{ once: true }}
+                initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 30, scale: 0.95 }}
+                whileInView={reduceMotion ? { opacity: 1 } : { opacity: 1, y: 0, scale: 1 }}
+                whileHover={reduceMotion ? undefined : { y: -4, scale: 1.02 }}
+                transition={{ 
+                  duration: 0.5, 
+                  delay: isMobile ? idx * 0.05 : idx * 0.1, 
+                  type: "spring", 
+                  stiffness: 100, 
+                  damping: 15 
+                }}
+                viewport={{ once: true, margin: "-50px" }}
+                className="p-4 rounded-xl transition-colors hover:bg-black/5 dark:hover:bg-white/5"
               >
                 <div className="flex items-start gap-4">
                   <div
@@ -357,11 +398,12 @@ export default function Home() {
             ].map((testimonial, idx) => (
               <motion.div
                 key={idx}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: idx * 0.1 }}
-                viewport={{ once: true }}
-                className="card p-6 flex flex-col"
+                initial={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.95, y: 20 }}
+                whileInView={reduceMotion ? { opacity: 1 } : { opacity: 1, scale: 1, y: 0 }}
+                whileHover={reduceMotion ? undefined : { y: -5, boxShadow: "0 10px 30px rgba(0,0,0,0.08)" }}
+                transition={{ type: "spring", stiffness: 100, damping: 15, delay: isMobile ? idx * 0.1 : idx * 0.2 }}
+                viewport={{ once: true, margin: "-50px" }}
+                className="card p-6 flex flex-col transition-all duration-300"
                 style={{
                   backgroundColor: "var(--surface)",
                   borderColor: "var(--border)",
