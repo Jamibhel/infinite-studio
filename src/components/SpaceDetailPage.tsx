@@ -14,6 +14,16 @@ interface SpaceData {
   is_active: boolean
   gallery_images: string[]
   pricing: number
+  amenities: string[]
+}
+
+const AMENITY_ICONS: Record<string, React.ElementType> = {
+  "WiFi": require("lucide-react").Wifi,
+  "Power Supply": require("lucide-react").Zap,
+  "AC/Cooling": require("lucide-react").AirVent,
+  "Sound System": require("lucide-react").Volume2,
+  "Coffee/Tea": require("lucide-react").Coffee,
+  "Camera Mount": require("lucide-react").Camera,
 }
 
 interface AddOn {
@@ -55,6 +65,7 @@ export function SpaceDetailPage({ spaceId }: { spaceId: string }) {
             is_active: spaceRes.data.is_active !== false,
             gallery_images: spaceRes.data.gallery_images || [],
             pricing: spaceRes.data.pricing || 0,
+            amenities: spaceRes.data.amenities || [],
           })
         }
 
@@ -134,7 +145,13 @@ export function SpaceDetailPage({ spaceId }: { spaceId: string }) {
         {hasImages && (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.1 }} className="mb-12">
             <div className="relative">
-              <div className="w-full h-72 sm:h-96 md:h-[500px] bg-cover bg-center rounded-2xl overflow-hidden" style={{ backgroundImage: `url('${currentImage}')` }}>
+              <div className="w-full h-72 sm:h-96 md:h-[500px] rounded-2xl overflow-hidden relative" style={{ backgroundColor: "var(--surface)" }}>
+                {currentImage && currentImage.match(/\.(mp4|webm|mov)$/i) ? (
+                  <video src={currentImage} autoPlay muted loop playsInline className="w-full h-full object-contain" />
+                ) : (
+                  <img src={currentImage || ""} alt={space.name} className="w-full h-full object-contain" />
+                )}
+                
                 <div className="absolute inset-0 flex items-center justify-between p-4 opacity-0 hover:opacity-100 transition-opacity">
                   {selectedImageIndex > 0 && (
                     <motion.button onClick={handlePrev} whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }} className="p-3 rounded-full" style={{ backgroundColor: "rgba(0,0,0,0.5)" }}>
@@ -156,22 +173,48 @@ export function SpaceDetailPage({ spaceId }: { spaceId: string }) {
               {/* Thumbnails */}
               {space.gallery_images.length > 1 && (
                 <div className="mt-4 flex gap-3 overflow-x-auto pb-2">
-                  {space.gallery_images.map((img, idx) => (
-                    <motion.button
-                      key={idx}
-                      onClick={() => setSelectedImageIndex(idx)}
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      className="flex-shrink-0 w-20 h-20 rounded-xl overflow-hidden transition-all"
-                      style={{
-                        backgroundImage: `url('${img}')`, backgroundSize: "cover", backgroundPosition: "center",
-                        outline: idx === selectedImageIndex ? "3px solid var(--cta-primary)" : "none",
-                        opacity: idx === selectedImageIndex ? 1 : 0.5,
-                      }}
-                    />
-                  ))}
+                  {space.gallery_images.map((img, idx) => {
+                    const isVid = img.match(/\.(mp4|webm|mov)$/i);
+                    return (
+                      <motion.button
+                        key={idx}
+                        onClick={() => setSelectedImageIndex(idx)}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        className="flex-shrink-0 w-20 h-20 rounded-xl overflow-hidden transition-all relative bg-black"
+                        style={{
+                          outline: idx === selectedImageIndex ? "3px solid var(--cta-primary)" : "none",
+                          opacity: idx === selectedImageIndex ? 1 : 0.5,
+                        }}
+                      >
+                        {isVid ? (
+                          <video src={img} className="w-full h-full object-cover" />
+                        ) : (
+                          <img src={img} className="w-full h-full object-cover" />
+                        )}
+                      </motion.button>
+                    )
+                  })}
                 </div>
               )}
+            </div>
+          </motion.div>
+        )}
+
+        {/* Amenities */}
+        {space.amenities.length > 0 && (
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.2 }} className="mb-12">
+            <h2 className="heading-h2 mb-6">Features & Amenities</h2>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+              {space.amenities.map(amenity => {
+                const Icon = AMENITY_ICONS[amenity] || require("lucide-react").Sparkles
+                return (
+                  <div key={amenity} className="flex flex-col items-center justify-center p-4 rounded-xl text-center" style={{ backgroundColor: "var(--surface)" }}>
+                    <Icon size={24} className="mb-2" style={{ color: "var(--cta-primary)" }} />
+                    <span className="text-sm font-semibold">{amenity}</span>
+                  </div>
+                )
+              })}
             </div>
           </motion.div>
         )}

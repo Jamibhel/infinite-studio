@@ -4,8 +4,11 @@ import { MessageCircle } from "lucide-react"
 import { motion } from "framer-motion"
 import { useEffect, useState } from "react"
 
+import { useSettings } from "@/lib/settings-context"
+
 export function WhatsAppButton() {
   const [showOnMobile, setShowOnMobile] = useState(false)
+  const { settings } = useSettings()
 
   useEffect(() => {
     const checkMobile = () => {
@@ -19,7 +22,7 @@ export function WhatsAppButton() {
 
   if (!showOnMobile) return null
 
-  const phoneNumber = "+2348188880000" // Replace with your actual WhatsApp number
+  const phoneNumber = settings.whatsapp_number || "+2348188880000"
   const message = "Hi! I'm interested in booking a session at Infinite Studio."
   const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`
 

@@ -61,9 +61,12 @@ const faqItems: FAQItem[] = [
   },
 ]
 
+import { useSettings } from "@/lib/settings-context"
+
 export function FAQ() {
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null)
   const [activeCategory, setActiveCategory] = useState<"all" | "bookings" | "policies" | "equipment">("all")
+  const { settings } = useSettings()
 
   const filteredItems =
     activeCategory === "all" ? faqItems : faqItems.filter((item) => item.category === activeCategory)
@@ -74,6 +77,11 @@ export function FAQ() {
     policies: "Policies",
     equipment: "Equipment",
   }
+
+  const whatsappNumber = settings.whatsapp_number
+    ? settings.whatsapp_number.replace(/\D/g, "")
+    : settings.phone.replace(/\D/g, "")
+  const whatsappLink = `https://wa.me/${whatsappNumber}?text=Hi Infinite Studio!`
 
   return (
     <section className="py-20 px-4 sm:px-6 lg:px-8" style={{ backgroundColor: "var(--bg)" }}>
@@ -187,7 +195,7 @@ export function FAQ() {
             Didn't find your answer?
           </p>
           <a
-            href="https://wa.me/2348000000000"
+            href={whatsappLink}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-block btn-primary"
