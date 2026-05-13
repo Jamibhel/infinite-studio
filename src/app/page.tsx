@@ -372,28 +372,28 @@ export default function Home() {
                 role: "Podcast Host & Creator",
                 quote:
                   `${settings.studio_name} completely changed my production game. The equipment is top-notch and the team is super supportive!`,
-                avatar: "https://images.unsplash.com/photo-1507009974461-92a795e61a81?w=100&h=100&fit=crop",
+                avatar: "https://images.unsplash.com/photo-1531384441138-2736e62e0919?w=100&h=100&fit=crop",
               },
               {
                 name: "Folake Okafor",
                 role: "Beauty & Lifestyle Creator",
                 quote:
                   "Finally found a studio that looks as good as studios in Lagos. The lighting is absolutely perfect!",
-                avatar: "https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=100&h=100&fit=crop",
+                avatar: "https://images.unsplash.com/photo-1531123897727-8f129e1688ce?w=100&h=100&fit=crop",
               },
               {
                 name: "Chisom Nwankwo",
                 role: "YouTube Content Creator",
                 quote:
                   "The flexibility with booking slots is amazing. I can create on my schedule without any stress.",
-                avatar: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=100&h=100&fit=crop",
+                avatar: "https://images.unsplash.com/photo-1531123414780-f74242c2b052?w=100&h=100&fit=crop",
               },
               {
                 name: "Ife Adelusi",
                 role: "Corporate Video Producer",
                 quote:
                   "Professional setup, creative team, and pricing that makes sense. Highly recommend for brands!",
-                avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop",
+                avatar: "https://images.unsplash.com/photo-1506803682981-6e718a9dd3ee?w=100&h=100&fit=crop",
               },
             ].map((testimonial, idx) => (
               <motion.div
