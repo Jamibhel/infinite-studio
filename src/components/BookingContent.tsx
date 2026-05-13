@@ -237,6 +237,7 @@ Please confirm availability and final pricing.
         status: "pending",
         group_size: parseInt(data.groupSize) || 1,
         addons: selectedAddOns,
+        amount: total,
         notes: data.notes,
         created_at: new Date().toISOString(),
       }
