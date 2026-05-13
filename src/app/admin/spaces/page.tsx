@@ -396,11 +396,11 @@ export default function SpacesPage() {
         {isEditing && (
           <>
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/40 z-50" onClick={closeSheet} />
+              className="fixed inset-0 bg-black/40 z-[60]" onClick={closeSheet} />
             <motion.div
               initial={{ y: "100%" }} animate={{ y: 0 }} exit={{ y: "100%" }}
               transition={{ type: "spring", damping: 28, stiffness: 260 }}
-              className="fixed bottom-0 left-0 right-0 z-50 rounded-t-3xl overflow-hidden max-h-[92vh] overflow-y-auto"
+              className="fixed bottom-0 left-0 right-0 z-[70] rounded-t-3xl overflow-hidden max-h-[92vh] overflow-y-auto pb-safe"
               style={{ background: "var(--surface)" }}
             >
               <div className="flex justify-center pt-3 pb-1">
@@ -519,9 +519,9 @@ export default function SpacesPage() {
         {deleteConfirm && (
           <>
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/50 z-[60]" onClick={() => setDeleteConfirm(null)} />
+              className="fixed inset-0 bg-black/50 z-[80]" onClick={() => setDeleteConfirm(null)} />
             <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }}
-              className="fixed z-[70] left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-80 rounded-2xl p-6 border"
+              className="fixed z-[90] left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-80 rounded-2xl p-6 border"
               style={{ background: "var(--surface)", borderColor: "var(--border)" }}>
               <div className="w-12 h-12 rounded-2xl bg-red-500/10 flex items-center justify-center mx-auto mb-4">
                 <Trash2 size={22} className="text-red-500" />

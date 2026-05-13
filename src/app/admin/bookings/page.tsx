@@ -216,7 +216,7 @@ export default function BookingsPage() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/40 z-50"
+              className="fixed inset-0 bg-black/40 z-[60]"
               onClick={() => setSelected(null)}
             />
             <motion.div
@@ -224,7 +224,7 @@ export default function BookingsPage() {
               animate={{ y: 0 }}
               exit={{ y: "100%" }}
               transition={{ type: "spring", damping: 28, stiffness: 260 }}
-              className="fixed bottom-0 left-0 right-0 z-50 rounded-t-3xl overflow-hidden max-h-[85vh] overflow-y-auto"
+              className="fixed bottom-0 left-0 right-0 z-[70] rounded-t-3xl overflow-hidden max-h-[85vh] overflow-y-auto pb-safe"
               style={{ background: "var(--surface)" }}
             >
               {/* Handle */}
