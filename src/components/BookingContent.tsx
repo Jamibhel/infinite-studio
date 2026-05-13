@@ -256,11 +256,6 @@ Please confirm availability and final pricing.
 
       setStep(5) // Show Success Screen
 
-
-      setStep(1)
-      setSelectedSpaces([])
-      setSelectedAddOns([])
-      setHours(1)
     } catch (error) {
       toast.error("Failed to process booking")
       console.error(error)
