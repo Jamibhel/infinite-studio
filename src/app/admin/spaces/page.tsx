@@ -17,14 +17,7 @@ interface Space {
   pricing?: number
 }
 
-const AMENITIES = [
-  { name: "WiFi", icon: Wifi },
-  { name: "Power Supply", icon: Zap },
-  { name: "AC/Cooling", icon: AirVent },
-  { name: "Sound System", icon: Volume2 },
-  { name: "Coffee/Tea", icon: Coffee },
-  { name: "Camera Mount", icon: Camera },
-]
+
 
 function InputField({ label, ...props }: { label: string } & React.InputHTMLAttributes<HTMLInputElement>) {
   return (
@@ -121,7 +114,7 @@ export default function SpacesPage() {
     if (!formData.name || !formData.description) { toast.error("Name and description required"); return }
     try {
       if (isNew) {
-        const id = (formData.name as string).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/-+$/, "")
+        const id = crypto.randomUUID()
         const insertData = {
           id,
           name: formData.name,
@@ -152,7 +145,6 @@ export default function SpacesPage() {
     if (!formData.name) { toast.error("Enter a Space Name first"); return }
     const name = formData.name
     const mood = (formData.mood_tag || "").toLowerCase()
-    const amenities = formData.amenities || []
     const nameLower = name.toLowerCase()
 
     // keyword-specific vocabulary
@@ -209,19 +201,15 @@ export default function SpacesPage() {
       `You'll know ${name} is different the moment you step inside.`,
     ]
 
-    // amenity sentences — natural language
-    let amenitySentence = ""
-    if (amenities.length >= 3) {
-      const shuffled = [...amenities].sort(() => Math.random() - 0.5)
-      const patterns = [
-        `You get ${shuffled[0]}, ${shuffled[1]}, and ${shuffled[2]} — all ready to go before you arrive.`,
-        `The essentials are covered: ${shuffled[0]}, ${shuffled[1]}, ${shuffled[2]}, and more.`,
-        `From ${shuffled[0]} to ${shuffled[1]} and ${shuffled[2]}, we've handled the logistics so you can focus on creating.`,
-      ]
-      amenitySentence = patterns[Math.floor(Math.random() * patterns.length)]
-    } else if (amenities.length > 0) {
-      amenitySentence = `Comes ready with ${amenities.join(" and ")} — no setup headaches.`
-    }
+    // studio feature sentences — since amenities aren't in the DB, offer general studio quality lines
+    const featureSentences = [
+      "Professional lighting, sound-treated walls, and every detail dialled in — just show up and create.",
+      "Everything you need is already here: premium lights, versatile backdrops, and a crew that knows the drill.",
+      "We've handled the logistics — lighting rigs, diffusers, backdrops, power — so you can focus purely on creating.",
+      "From ring lights to softboxes, every piece of gear is studio-grade and ready to go.",
+      "The setup is meticulous: controlled lighting, acoustic treatment, and enough power outlets to run your entire kit.",
+    ]
+    const featureSentence = featureSentences[Math.floor(Math.random() * featureSentences.length)]
 
     // closings — action-oriented, warm
     const closings = [
@@ -241,7 +229,7 @@ export default function SpacesPage() {
     const parts = [opening]
     if (keywordSentence) parts.push(`Think ${keywordSentence}.`)
     if (moodSentence) parts.push(moodSentence)
-    if (amenitySentence) parts.push(amenitySentence)
+    parts.push(featureSentence)
     parts.push(closing)
 
     setFormData(prev => ({ ...prev, description: parts.join(" ") }))
@@ -267,13 +255,7 @@ export default function SpacesPage() {
     setFormData(prev => ({ ...prev, gallery_images: (prev.gallery_images || []).filter((_, i) => i !== idx) }))
   }
 
-  const toggleAmenity = (name: string) => {
-    const current = formData.amenities || []
-    setFormData(prev => ({
-      ...prev,
-      amenities: current.includes(name) ? current.filter(a => a !== name) : [...current, name],
-    }))
-  }
+
 
   const isEditing = isNew || selected !== null
 
@@ -327,8 +309,8 @@ export default function SpacesPage() {
                 {/* Image */}
                 <div className="relative h-44 bg-gradient-to-br overflow-hidden"
                   style={{ background: "linear-gradient(135deg, var(--cta-primary)33, var(--cta-hover)33)" }}>
-                  {space.images?.[0] ? (
-                    <img src={space.images[0]} alt={space.name} className="w-full h-full object-cover" />
+                  {space.gallery_images?.[0] ? (
+                    <img src={space.gallery_images[0]} alt={space.name} className="w-full h-full object-cover" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
                       <Camera size={36} style={{ color: "var(--cta-primary)", opacity: 0.4 }} />
@@ -462,26 +444,7 @@ export default function SpacesPage() {
                     <InputField label="Price (₦/hour)" type="number" value={formData.pricing || 0} onChange={e => setFormData(p => ({ ...p, pricing: +e.target.value }))} />
                   </div>
 
-                  {/* Amenities */}
-                  <div>
-                    <label className="block text-xs uppercase tracking-wide font-semibold mb-2 font-body" style={{ color: "var(--text-muted)" }}>Amenities</label>
-                    <div className="grid grid-cols-3 gap-2">
-                      {AMENITIES.map(({ name, icon: Icon }) => {
-                        const active = (formData.amenities || []).includes(name)
-                        return (
-                          <motion.button key={name} whileTap={{ scale: 0.94 }} onClick={() => toggleAmenity(name)}
-                            className="flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all"
-                            style={{
-                              borderColor: active ? "var(--cta-primary)" : "var(--border)",
-                              background: active ? "rgba(196,98,58,0.08)" : "var(--bg)",
-                            }}>
-                            <Icon size={18} style={{ color: active ? "var(--cta-primary)" : "var(--text-muted)" }} />
-                            <span className="text-[9px] font-bold text-center font-body" style={{ color: active ? "var(--cta-primary)" : "var(--text-muted)" }}>{name}</span>
-                          </motion.button>
-                        )
-                      })}
-                    </div>
-                  </div>
+
 
                   {/* Actions */}
                   <div className="flex gap-2 pt-2">

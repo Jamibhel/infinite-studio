@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { ChevronRight, X, ChevronLeft } from "lucide-react"
+import { ChevronRight, X, ChevronLeft, Film } from "lucide-react"
 import Link from "next/link"
 import { createClient } from "@supabase/supabase-js"
 
@@ -12,6 +12,9 @@ interface GalleryItem {
   space_id: string | null
   space_name: string | null
 }
+
+const VIDEO_EXTENSIONS = [".mp4", ".webm", ".mov", ".avi", ".mkv"]
+const isVideo = (filename: string) => VIDEO_EXTENSIONS.some(ext => filename.toLowerCase().endsWith(ext))
 
 export function GalleryContent() {
   const [galleryItems, setGalleryItems] = useState<GalleryItem[]>([])
@@ -195,10 +198,27 @@ export function GalleryContent() {
                     borderColor: "var(--border)",
                   }}
                 >
-                  <div
-                    className="w-full h-48 md:h-64 bg-cover bg-center relative group-hover:scale-110 transition-transform duration-500"
-                    style={{ backgroundImage: `url('${item.url}')` }}
-                  >
+                  <div className="w-full h-48 md:h-64 relative overflow-hidden">
+                    {isVideo(item.id) ? (
+                      <video
+                        src={item.url}
+                        muted
+                        autoPlay
+                        loop
+                        playsInline
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                      />
+                    ) : (
+                      <div
+                        className="w-full h-full bg-cover bg-center group-hover:scale-110 transition-transform duration-500"
+                        style={{ backgroundImage: `url('${item.url}')` }}
+                      />
+                    )}
+                    {isVideo(item.id) && (
+                      <div className="absolute top-2 left-2 w-7 h-7 rounded-full bg-black/60 flex items-center justify-center z-10">
+                        <Film size={14} className="text-white" />
+                      </div>
+                    )}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4">
                       <div>
                         {item.space_name && (
@@ -206,7 +226,7 @@ export function GalleryContent() {
                             {item.space_name}
                           </span>
                         )}
-                        <p className="text-white text-sm font-semibold">View Image</p>
+                        <p className="text-white text-sm font-semibold">{isVideo(item.id) ? "Play Video" : "View Image"}</p>
                       </div>
                     </div>
                   </div>
@@ -244,13 +264,22 @@ export function GalleryContent() {
                   <X size={24} color="white" />
                 </button>
 
-                {/* Main Image Container */}
+                {/* Main Content Container */}
                 <div className="relative w-full h-[60vh] md:h-[80vh] flex items-center justify-center">
-                  <img
-                    src={selectedImage.url}
-                    alt="Gallery preview"
-                    className="max-w-full max-h-full object-contain rounded-lg"
-                  />
+                  {isVideo(selectedImage.id) ? (
+                    <video
+                      src={selectedImage.url}
+                      controls
+                      autoPlay
+                      className="max-w-full max-h-full object-contain rounded-lg"
+                    />
+                  ) : (
+                    <img
+                      src={selectedImage.url}
+                      alt="Gallery preview"
+                      className="max-w-full max-h-full object-contain rounded-lg"
+                    />
+                  )}
 
                   {/* Navigation Arrows */}
                   {currentIndex > 0 && (

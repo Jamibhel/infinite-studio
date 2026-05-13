@@ -8,16 +8,16 @@
     /* Light Mode */
     --bg-light: #d6d3c3;
     --surface-light: #EDE0D4;
-    --border-light: #D4B8A8;
-    --text-primary-light: #1E1014;
-    --text-muted-light: #9A7060;
+    --border-light: #C8A898;
+    --text-primary-light: #12080E;
+    --text-muted-light: #4A2E22;
 
     /* Dark Mode */
     --bg-dark: #2D1B2E;
     --surface-dark: #3E2030;
-    --border-dark: #6B2D3E;
-    --text-primary-dark: #F0E4D8;
-    --text-muted-dark: #C4A090;
+    --border-dark: #7A3D50;
+    --text-primary-dark: #FAF5F0;
+    --text-muted-dark: #D4AA88;
 
     /* Accents (Both modes) */
     --cta-primary: #C4623A;

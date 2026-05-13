@@ -3,14 +3,27 @@
 import Link from "next/link"
 import { useEffect, useState } from "react"
 import { motion } from "framer-motion"
-import { ArrowRight, Sparkles, Check, Star } from "lucide-react"
+import { ArrowRight, Sparkles, Check, Star, GalleryHorizontal, Film } from "lucide-react"
 import { FAQ } from "@/components/FAQ"
 import { useSettings } from "@/lib/settings-context"
+import { createClient } from "@supabase/supabase-js"
+
+interface GalleryItem {
+  id: string
+  url: string
+  space_name: string | null
+  caption: string
+}
+
+const VIDEO_EXTENSIONS = [".mp4", ".webm", ".mov", ".avi", ".mkv"]
+const isVideoFile = (filename: string) => VIDEO_EXTENSIONS.some(ext => filename.toLowerCase().endsWith(ext))
 
 export default function Home() {
   const [isMobile, setIsMobile] = useState(false)
   const [reduceMotion, setReduceMotion] = useState(false)
   const { settings, loading } = useSettings()
+  const [galleryItems, setGalleryItems] = useState<GalleryItem[]>([])
+  const [galleryLoading, setGalleryLoading] = useState(true)
 
   useEffect(() => {
     const onResize = () => setIsMobile(window.innerWidth <= 640)
@@ -21,6 +34,55 @@ export default function Home() {
     setReduceMotion(rm ? rm.matches : false)
 
     return () => window.removeEventListener("resize", onResize)
+  }, [])
+
+  // Fetch live gallery images from Supabase
+  useEffect(() => {
+    const fetchGallery = async () => {
+      try {
+        const supabase = createClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL || "",
+          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ""
+        )
+        // Get all files from the gallery bucket
+        const { data: files } = await supabase.storage.from("gallery").list("", { limit: 6, sortBy: { column: "created_at", order: "desc" } })
+        if (!files || files.length === 0) { setGalleryLoading(false); return }
+
+        // Get metadata (space tags / captions) from gallery_metadata table
+        const ids = files.map(f => f.name)
+        const { data: meta } = await supabase.from("gallery_metadata").select("id, space_id, caption")
+        const metaMap: Record<string, { space_id: string; caption: string }> = {}
+        if (meta) meta.forEach((m: any) => { metaMap[m.id] = m })
+
+        // Get space names for space_ids we have
+        const spaceIds = [...new Set(Object.values(metaMap).map(m => m.space_id).filter(Boolean))]
+        const { data: spacesData } = spaceIds.length > 0
+          ? await supabase.from("spaces").select("id, name").in("id", spaceIds)
+          : { data: [] }
+        const spaceMap: Record<string, string> = {}
+        if (spacesData) spacesData.forEach((s: any) => { spaceMap[s.id] = s.name })
+
+        const items: GalleryItem[] = files
+          .filter(f => f.name !== ".emptyFolderPlaceholder")
+          .map(f => {
+            const { data: urlData } = supabase.storage.from("gallery").getPublicUrl(f.name)
+            const m = metaMap[f.name]
+            return {
+              id: f.name,
+              url: urlData.publicUrl,
+              space_name: m?.space_id ? spaceMap[m.space_id] || null : null,
+              caption: m?.caption || "",
+            }
+          })
+
+        setGalleryItems(items)
+      } catch (e) {
+        console.error("Gallery fetch error:", e)
+      } finally {
+        setGalleryLoading(false)
+      }
+    }
+    fetchGallery()
   }, [])
 
   const containerVariants = {
@@ -352,83 +414,80 @@ export default function Home() {
             </p>
           </motion.div>
 
-          <div className="grid md:grid-cols-3 gap-6">
-            {[
-              {
-                title: "Podcast Setup",
-                space: "The Bar",
-                image: "https://images.unsplash.com/photo-1478737270454-541680872639?w=500&h=400&fit=crop",
-              },
-              {
-                title: "Fashion Shoot",
-                space: "Vanity Mirror",
-                image: "https://images.unsplash.com/photo-1552667466-07d71e725e34?w=500&h=400&fit=crop",
-              },
-              {
-                title: "Product Video",
-                space: "Green Screen",
-                image: "https://images.unsplash.com/photo-1533062407769-eed806e80ee3?w=500&h=400&fit=crop",
-              },
-              {
-                title: "Brand Campaign",
-                space: "Office Set",
-                image: "https://images.unsplash.com/photo-1552664730-d307ca884978?w=500&h=400&fit=crop",
-              },
-              {
-                title: "Beauty Content",
-                space: "Vanity Mirror",
-                image: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=500&h=400&fit=crop",
-              },
-              {
-                title: "Interview Series",
-                space: "The Bar",
-                image: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=500&h=400&fit=crop",
-              },
-            ].map((item, idx) => (
-              <motion.div
-                key={idx}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: idx * 0.1 }}
-                viewport={{ once: true }}
-                className="group relative overflow-hidden rounded-lg card card-hover h-80"
-                style={{
-                  backgroundColor: "var(--surface)",
-                  borderColor: "var(--border)",
-                }}
-              >
-                {/* Image */}
-                <div
-                  className="absolute inset-0 bg-cover bg-center group-hover:scale-110 transition-transform duration-300"
-                  style={{
-                    backgroundImage: `url('${item.image}')`,
-                  }}
-                />
+          {galleryLoading ? (
+            <div className="grid md:grid-cols-3 gap-6">
+              {[...Array(6)].map((_, i) => (
+                <div key={i} className="h-80 rounded-xl animate-pulse" style={{ backgroundColor: "var(--surface)" }} />
+              ))}
+            </div>
+          ) : galleryItems.length === 0 ? (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-center py-20 rounded-2xl"
+              style={{ backgroundColor: "var(--surface)", border: "2px dashed var(--border)" }}
+            >
+              <GalleryHorizontal size={48} className="mx-auto mb-4" style={{ color: "var(--text-muted)" }} />
+              <p className="text-lg font-semibold" style={{ color: "var(--text-primary)" }}>Gallery coming soon</p>
+              <p className="text-sm mt-1" style={{ color: "var(--text-muted)" }}>Images will appear here once uploaded from the admin panel</p>
+            </motion.div>
+          ) : (
+            <div className="grid md:grid-cols-3 gap-6">
+              {galleryItems.map((item, idx) => (
+                <motion.div
+                  key={item.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6, delay: idx * 0.1 }}
+                  viewport={{ once: true }}
+                  className="group relative overflow-hidden rounded-xl h-80 cursor-pointer"
+                  style={{ backgroundColor: "var(--surface)", border: "1px solid var(--border)" }}
+                >                  {/* Media */}
+                  {isVideoFile(item.id) ? (
+                    <video
+                      src={item.url}
+                      muted
+                      autoPlay
+                      loop
+                      playsInline
+                      className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                    />
+                  ) : (
+                    <div
+                      className="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-110"
+                      style={{ backgroundImage: `url('${item.url}')` }}
+                    />
+                  )}
 
-                {/* Overlay */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  {/* Video badge */}
+                  {isVideoFile(item.id) && (
+                    <div className="absolute top-3 right-3 w-7 h-7 rounded-full bg-black/60 flex items-center justify-center z-10">
+                      <Film size={14} className="text-white" />
+                    </div>
+                  )}
 
-                {/* Content */}
-                <div className="absolute inset-0 flex flex-col justify-end p-6 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                  <h3 className="heading-h3 mb-1">{item.title}</h3>
-                  <p className="text-sm" style={{ color: "rgba(255, 255, 255, 0.8)" }}>
-                    Shot in {item.space}
-                  </p>
-                </div>
+                  {/* Space tag */}
+                  {item.space_name && (
+                    <div className="absolute top-3 left-3 px-3 py-1 rounded-full text-xs font-bold text-white z-10"
+                      style={{ backgroundColor: "var(--cta-primary)" }}>
+                      {item.space_name}
+                    </div>
+                  )}
 
-                {/* Default Content (visible when not hovering) */}
-                <div className="absolute inset-0 flex flex-col justify-end p-6 text-white group-hover:opacity-0 transition-opacity duration-300">
-                  <div
-                    className="w-8 h-8 rounded-full flex items-center justify-center mb-2"
-                    style={{ backgroundColor: "var(--cta-primary)" }}
-                  >
-                    <ArrowRight size={16} />
+                  {/* Hover overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  <div className="absolute inset-0 flex flex-col justify-end p-5 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    {item.caption && (
+                      <p className="text-white text-sm font-medium">{item.caption}</p>
+                    )}
+                    {item.space_name && !item.caption && (
+                      <p className="text-white/80 text-sm">Shot in {item.space_name}</p>
+                    )}
                   </div>
-                  <h3 className="heading-h3">{item.title}</h3>
-                </div>
-              </motion.div>
-            ))}
-          </div>
+                </motion.div>
+              ))}
+            </div>
+          )}
 
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -438,26 +497,18 @@ export default function Home() {
             className="text-center mt-12"
           >
             <Link href="/gallery">
-              <button
-                className="px-8 py-3 font-semibold rounded-lg transition-all"
+              <motion.button
+                whileHover={{ scale: 1.03, backgroundColor: "var(--cta-primary)", color: "white" }}
+                whileTap={{ scale: 0.97 }}
+                className="px-8 py-3 font-semibold rounded-xl transition-all duration-200"
                 style={{
                   backgroundColor: "var(--surface)",
                   color: "var(--text-primary)",
                   border: "1px solid var(--border)",
                 }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = "var(--cta-primary)";
-                  e.currentTarget.style.color = "white";
-                  e.currentTarget.style.borderColor = "var(--cta-primary)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = "var(--surface)";
-                  e.currentTarget.style.color = "var(--text-primary)";
-                  e.currentTarget.style.borderColor = "var(--border)";
-                }}
               >
-                View Full Gallery
-              </button>
+                View Full Gallery →
+              </motion.button>
             </Link>
           </motion.div>
         </div>

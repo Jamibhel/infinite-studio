@@ -2,7 +2,10 @@
 
 import { AdminLayout } from "@/components/AdminLayout"
 import { motion, AnimatePresence } from "framer-motion"
-import { Upload, Trash2, Image as ImageIcon, X, RefreshCw, Tag } from "lucide-react"
+import { Upload, Trash2, Image as ImageIcon, X, RefreshCw, Tag, Film } from "lucide-react"
+
+const VIDEO_EXTENSIONS = [".mp4", ".webm", ".mov", ".avi", ".mkv"]
+const isVideo = (filename: string) => VIDEO_EXTENSIONS.some(ext => filename.toLowerCase().endsWith(ext))
 import { useState, useRef, useEffect, useCallback } from "react"
 import { createClient } from "@supabase/supabase-js"
 import toast from "react-hot-toast"
@@ -111,8 +114,12 @@ export default function GalleryPage() {
     let uploaded = 0
 
     for (const file of Array.from(files)) {
-      if (!file.type.startsWith("image/")) { toast.error(`${file.name} is not an image`); continue }
-      if (file.size > 5 * 1024 * 1024) { toast.error(`${file.name} exceeds 5MB`); continue }
+      const isImg = file.type.startsWith("image/")
+      const isVid = file.type.startsWith("video/")
+      if (!isImg && !isVid) { toast.error(`${file.name} is not a supported file`); continue }
+      // 5MB limit for images, 50MB limit for videos
+      const maxSize = isVid ? 50 * 1024 * 1024 : 5 * 1024 * 1024
+      if (file.size > maxSize) { toast.error(`${file.name} exceeds ${isVid ? "50MB" : "5MB"}`); continue }
 
       const filename = `${Date.now()}-${file.name}`
       const { error } = await supabase.storage.from("gallery").upload(filename, file)
@@ -126,7 +133,7 @@ export default function GalleryPage() {
     }
 
     if (uploaded > 0) {
-      toast.success(`${uploaded} image${uploaded > 1 ? "s" : ""} uploaded`)
+      toast.success(`${uploaded} file${uploaded > 1 ? "s" : ""} uploaded`)
       await fetchGallery()
     }
     setUploading(false)
@@ -181,7 +188,7 @@ export default function GalleryPage() {
         <div className="flex items-center justify-between">
           <div>
             <h2 className="font-display text-3xl font-bold" style={{ color: "var(--text-primary)" }}>Gallery</h2>
-            <p className="text-sm mt-1 font-body" style={{ color: "var(--text-muted)" }}>{items.length} images · Tag images to spaces for filtering</p>
+            <p className="text-sm mt-1 font-body" style={{ color: "var(--text-muted)" }}>{items.length} files · Tag to spaces for filtering</p>
           </div>
           <button
             onClick={fetchGallery}
@@ -229,14 +236,14 @@ export default function GalleryPage() {
             )}
           </div>
           <p className="text-sm font-bold font-body" style={{ color: "var(--text-primary)" }}>
-            {uploading ? "Uploading..." : "Drop images here or tap to upload"}
+            {uploading ? "Uploading..." : "Drop images or videos here, or tap to upload"}
           </p>
-          <p className="text-xs mt-1 font-body" style={{ color: "var(--text-muted)" }}>PNG, JPG, WebP, GIF · Max 5MB each</p>
+          <p className="text-xs mt-1 font-body" style={{ color: "var(--text-muted)" }}>Images (PNG, JPG, WebP, GIF) · Max 5MB &nbsp;|&nbsp; Videos (MP4, WebM, MOV) · Max 50MB</p>
           <input
             ref={fileInputRef}
             type="file"
             multiple
-            accept="image/*"
+            accept="image/*,video/mp4,video/webm,video/quicktime"
             onChange={e => e.target.files && handleFiles(e.target.files)}
             className="hidden"
           />
@@ -264,11 +271,27 @@ export default function GalleryPage() {
                 style={{ aspectRatio: "1", background: "var(--surface)", border: "1px solid var(--border)" }}
                 onClick={() => setSelected(item)}
               >
-                <img
-                  src={item.url}
-                  alt={item.filename}
-                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                />
+                {isVideo(item.filename) ? (
+                  <video
+                    src={item.url}
+                    muted
+                    autoPlay
+                    loop
+                    playsInline
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                  />
+                ) : (
+                  <img
+                    src={item.url}
+                    alt={item.filename}
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                  />
+                )}
+                {isVideo(item.filename) && (
+                  <div className="absolute top-2 left-2 w-6 h-6 rounded-full bg-black/60 flex items-center justify-center z-10">
+                    <Film size={12} className="text-white" />
+                  </div>
+                )}
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all" />
                 {/* Space tag badge */}
                 {item.space_id && (
@@ -343,7 +366,16 @@ export default function GalleryPage() {
                 </div>
               </div>
               <div className="flex-1 overflow-hidden flex items-center justify-center p-4">
-                <img src={selected.url} alt={selected.filename} className="max-w-full max-h-full object-contain rounded-xl" />
+                {isVideo(selected.filename) ? (
+                  <video
+                    src={selected.url}
+                    controls
+                    autoPlay
+                    className="max-w-full max-h-full object-contain rounded-xl"
+                  />
+                ) : (
+                  <img src={selected.url} alt={selected.filename} className="max-w-full max-h-full object-contain rounded-xl" />
+                )}
               </div>
             </motion.div>
           </>
@@ -371,7 +403,7 @@ export default function GalleryPage() {
               <div className="w-12 h-12 rounded-2xl bg-red-500/10 flex items-center justify-center mx-auto mb-4">
                 <Trash2 size={22} className="text-red-500" />
               </div>
-              <h3 className="font-display text-lg font-bold text-center mb-2" style={{ color: "var(--text-primary)" }}>Delete Image?</h3>
+              <h3 className="font-display text-lg font-bold text-center mb-2" style={{ color: "var(--text-primary)" }}>Delete File?</h3>
               <p className="text-sm text-center mb-5 font-body" style={{ color: "var(--text-muted)" }}>This action cannot be undone.</p>
               <div className="flex gap-2">
                 <button
