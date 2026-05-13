@@ -7,6 +7,7 @@ import FloatingWhatsApp from "@/components/FloatingWhatsApp"
 import { Toaster } from "react-hot-toast"
 import { AuthProvider } from "@/lib/auth-context"
 import { ThemeProvider } from "@/lib/theme-provider"
+import { SettingsProvider } from "@/lib/settings-context"
 
 export function LayoutProviders({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
@@ -16,8 +17,10 @@ export function LayoutProviders({ children }: { children: React.ReactNode }) {
     return (
       <ThemeProvider>
         <AuthProvider>
-          {children}
-          <Toaster position="bottom-right" />
+          <SettingsProvider>
+            {children}
+            <Toaster position="bottom-right" />
+          </SettingsProvider>
         </AuthProvider>
       </ThemeProvider>
     )
@@ -26,12 +29,15 @@ export function LayoutProviders({ children }: { children: React.ReactNode }) {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <Navigation />
-        {children}
-        <Footer />
-        <FloatingWhatsApp />
-        <Toaster position="bottom-right" />
+        <SettingsProvider>
+          <Navigation />
+          {children}
+          <Footer />
+          <FloatingWhatsApp />
+          <Toaster position="bottom-right" />
+        </SettingsProvider>
       </AuthProvider>
     </ThemeProvider>
   )
 }
+

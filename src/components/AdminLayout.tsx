@@ -19,11 +19,13 @@ import Link from "next/link"
 import { useAuth } from "@/lib/auth-context"
 import { useTheme } from "@/lib/theme-provider"
 import { ProtectedRoute } from "./ProtectedRoute"
+import { useSettings } from "@/lib/settings-context"
 
 const navItems = [
   { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
   { label: "Bookings", href: "/admin/bookings", icon: Calendar },
   { label: "Spaces", href: "/admin/spaces", icon: Layers },
+  { label: "Add-ons", href: "/admin/addons", icon: Sparkles },
   { label: "Gallery", href: "/admin/gallery", icon: Image },
   { label: "Settings", href: "/admin/settings", icon: Settings },
 ]
@@ -35,6 +37,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const { logout, user } = useAuth()
   const { theme, toggleTheme } = useTheme()
+  const { settings } = useSettings()
 
   useEffect(() => { setIsClient(true) }, [])
 
@@ -69,7 +72,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
                 ∞
               </div>
               <div>
-                <p className="font-display text-base font-bold leading-none" style={{ color: "var(--text-primary)" }}>Infinite</p>
+                <p className="font-display text-base font-bold leading-none truncate w-40" style={{ color: "var(--text-primary)" }}>{settings.studio_name || "Infinite"}</p>
                 <p className="text-[10px] tracking-widest uppercase mt-0.5" style={{ color: "var(--text-muted)" }}>Control Center</p>
               </div>
             </div>
@@ -183,7 +186,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
                   ∞
                 </div>
                 <div>
-                  <p className="text-xs font-bold font-display leading-none" style={{ color: "var(--text-primary)" }}>Infinite</p>
+                  <p className="text-xs font-bold font-display leading-none truncate w-24" style={{ color: "var(--text-primary)" }}>{settings.studio_name || "Infinite"}</p>
                   <p className="text-[9px] uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>{currentPage.label}</p>
                 </div>
               </div>

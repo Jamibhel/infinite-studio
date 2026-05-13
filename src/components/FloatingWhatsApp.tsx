@@ -3,12 +3,13 @@
 import { motion } from "framer-motion"
 import { MessageCircle } from "lucide-react"
 import { useState, useEffect } from "react"
+import { useSettings } from "@/lib/settings-context"
 
 export default function FloatingWhatsApp() {
   const [isMobile, setIsMobile] = useState(false)
+  const { settings } = useSettings()
 
   useEffect(() => {
-    // Check if mobile on mount and on resize
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 768)
     }
@@ -18,10 +19,13 @@ export default function FloatingWhatsApp() {
     return () => window.removeEventListener("resize", checkMobile)
   }, [])
 
-  // Only render on mobile
   if (!isMobile) return null
 
-  const whatsappNumber = "2348000000000" // Replace with actual number
+  // Use whatsapp_number from settings, fallback to phone with digits stripped
+  const whatsappNumber = settings.whatsapp_number
+    ? settings.whatsapp_number.replace(/\D/g, "")
+    : settings.phone.replace(/\D/g, "")
+  
   const whatsappMessage = "Hi Infinite Studio! I'm interested in booking a space."
   const whatsappLink = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(whatsappMessage)}`
 

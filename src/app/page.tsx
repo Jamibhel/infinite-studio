@@ -5,10 +5,12 @@ import { useEffect, useState } from "react"
 import { motion } from "framer-motion"
 import { ArrowRight, Sparkles, Check, Star } from "lucide-react"
 import { FAQ } from "@/components/FAQ"
+import { useSettings } from "@/lib/settings-context"
 
 export default function Home() {
   const [isMobile, setIsMobile] = useState(false)
   const [reduceMotion, setReduceMotion] = useState(false)
+  const { settings, loading } = useSettings()
 
   useEffect(() => {
     const onResize = () => setIsMobile(window.innerWidth <= 640)
@@ -89,7 +91,7 @@ export default function Home() {
           >
             <span className="px-4 py-2 rounded-full text-sm font-semibold flex items-center gap-2">
               <Sparkles size={16} />
-              Premium Content Creation Studio
+              {settings.studio_name}
             </span>
           </motion.div>
 
@@ -101,7 +103,7 @@ export default function Home() {
             animate={reduceMotion ? undefined : { scale: [1, 1.01, 1], rotate: [0, -0.4, 0] }}
             transition={reduceMotion ? undefined : { duration: 6, repeat: Infinity, ease: "easeInOut" }}
           >
-            Where Your Vision Becomes Content
+            {settings.marquee_text ? settings.marquee_text.split("·")[0].trim() || "Where Your Vision Becomes Content" : "Where Your Vision Becomes Content"}
           </motion.h1>
 
           {/* Subheading */}
@@ -110,7 +112,7 @@ export default function Home() {
             className="text-xl sm:text-2xl mb-8"
             style={{ color: "rgba(255, 255, 255, 0.9)" }}
           >
-            Stunning themed spaces, professional equipment, and creative energy. Everything you need to create extraordinary content.
+            {settings.studio_description}
           </motion.p>
 
           {/* CTA Buttons */}
@@ -186,7 +188,7 @@ export default function Home() {
             viewport={{ once: true }}
             className="text-center mb-12"
           >
-            <h2 className="heading-h2 mb-4">Why Choose Infinite Studio</h2>
+            <h2 className="heading-h2 mb-4">Why Choose {settings.studio_name}</h2>
             <p className="text-lg" style={{ color: "var(--text-muted)" }}>
               Everything creators need to produce professional content
             </p>
@@ -266,7 +268,7 @@ export default function Home() {
                 name: "Adeyemi Johnson",
                 role: "Podcast Host & Creator",
                 quote:
-                  "Infinite Studio completely changed my production game. The equipment is top-notch and the team is super supportive!",
+                  `${settings.studio_name} completely changed my production game. The equipment is top-notch and the team is super supportive!`,
                 avatar: "https://images.unsplash.com/photo-1507009974461-92a795e61a81?w=100&h=100&fit=crop",
               },
               {
@@ -346,7 +348,7 @@ export default function Home() {
           >
             <h2 className="heading-h2 mb-4">Creative Showcase</h2>
             <p className="text-lg" style={{ color: "var(--text-muted)" }}>
-              See what's being created at Infinite Studio
+              See what's being created at {settings.studio_name}
             </p>
           </motion.div>
 

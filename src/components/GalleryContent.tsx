@@ -1,40 +1,100 @@
 "use client"
 
-import { useState } from "react"
-import { motion } from "framer-motion"
+import { useState, useEffect } from "react"
+import { motion, AnimatePresence } from "framer-motion"
 import { ChevronRight, X, ChevronLeft } from "lucide-react"
 import Link from "next/link"
+import { createClient } from "@supabase/supabase-js"
+
+interface GalleryItem {
+  id: string
+  url: string
+  space_id: string | null
+  space_name: string | null
+}
 
 export function GalleryContent() {
-  // Mock gallery data - would come from Supabase in production
-  const galleryItems = Array.from({ length: 12 }, (_, i) => ({
-    id: i,
-    title: `Creator Shoot ${i + 1}`,
-    space: ["The Bar", "Green Screen", "Vanity Mirror", "Staircase"][i % 4],
-    image: [
-      "https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?w=500&h=400&fit=crop",
-      "https://images.unsplash.com/photo-1536968335557-91d2582f3e91?w=500&h=400&fit=crop",
-      "https://images.unsplash.com/photo-1560169897-fc0cdbdfa4d5?w=500&h=400&fit=crop",
-      "https://images.unsplash.com/photo-1514432324607-2e467f4af3fb?w=500&h=400&fit=crop",
-    ][i % 4],
-  }))
-
-  const [filter, setFilter] = useState("all")
-  const [selectedImage, setSelectedImage] = useState<(typeof galleryItems)[0] | null>(null)
+  const [galleryItems, setGalleryItems] = useState<GalleryItem[]>([])
+  const [loading, setLoading] = useState(true)
+  const [selectedImage, setSelectedImage] = useState<GalleryItem | null>(null)
   const [currentIndex, setCurrentIndex] = useState(0)
-  const spaces = ["all", "The Bar", "Green Screen", "Vanity Mirror", "Staircase"]
+  const [activeFilter, setActiveFilter] = useState("all")
+  const [spaceFilters, setSpaceFilters] = useState<{ id: string; name: string }[]>([])
 
-  const filtered =
-    filter === "all" ? galleryItems : galleryItems.filter((item) => item.space === filter)
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL || "",
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ""
+  )
 
-  const handleImageClick = (item: typeof galleryItems[0], index: number) => {
+  useEffect(() => {
+    fetchGallery()
+  }, [])
+
+  const fetchGallery = async () => {
+    try {
+      setLoading(true)
+      const [storageRes, metaRes, spacesRes] = await Promise.all([
+        supabase.storage.from("gallery").list("", { limit: 200 }),
+        supabase.from("gallery_metadata").select("*"),
+        supabase.from("spaces").select("id, name").eq("is_active", true)
+      ])
+
+      if (storageRes.error) throw storageRes.error
+
+      const metaMap: Record<string, any> = {}
+      if (metaRes.data) {
+        for (const m of metaRes.data) { metaMap[m.id] = m }
+      }
+
+      const spacesMap: Record<string, string> = {}
+      if (spacesRes.data) {
+        for (const s of spacesRes.data) { spacesMap[s.id] = s.name }
+      }
+
+      const withUrls = (storageRes.data || [])
+        .filter((f: any) => !f.name.startsWith("."))
+        .map((f: any) => {
+          const meta = metaMap[f.name]
+          const spaceId = meta?.space_id || null
+          return {
+            id: f.name,
+            url: supabase.storage.from("gallery").getPublicUrl(f.name).data.publicUrl,
+            space_id: spaceId,
+            space_name: spaceId ? (spacesMap[spaceId] || null) : null,
+          }
+        })
+
+      setGalleryItems(withUrls)
+
+      // Build unique filters from tagged images
+      const usedSpaces = new Set<string>()
+      for (const item of withUrls) {
+        if (item.space_id && item.space_name) usedSpaces.add(item.space_id)
+      }
+      const filters = Array.from(usedSpaces).map(id => ({
+        id,
+        name: spacesMap[id] || id,
+      }))
+      setSpaceFilters(filters)
+    } catch (err) {
+      console.error("Failed to fetch gallery:", err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const filteredItems = activeFilter === "all"
+    ? galleryItems
+    : galleryItems.filter(item => item.space_id === activeFilter)
+
+  const handleImageClick = (item: GalleryItem, index: number) => {
     setSelectedImage(item)
     setCurrentIndex(index)
   }
 
   const handleNext = () => {
-    if (currentIndex < filtered.length - 1) {
-      const nextItem = filtered[currentIndex + 1]
+    if (currentIndex < filteredItems.length - 1) {
+      const nextItem = filteredItems[currentIndex + 1]
       setSelectedImage(nextItem)
       setCurrentIndex(currentIndex + 1)
     }
@@ -42,7 +102,7 @@ export function GalleryContent() {
 
   const handlePrev = () => {
     if (currentIndex > 0) {
-      const prevItem = filtered[currentIndex - 1]
+      const prevItem = filteredItems[currentIndex - 1]
       setSelectedImage(prevItem)
       setCurrentIndex(currentIndex - 1)
     }
@@ -55,7 +115,7 @@ export function GalleryContent() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
-          className="text-center mb-16"
+          className="text-center mb-12"
         >
           <h1 className="heading-h1 mb-4">Creator Gallery</h1>
           <p className="text-lg" style={{ color: "var(--text-muted)" }}>
@@ -63,153 +123,176 @@ export function GalleryContent() {
           </p>
         </motion.div>
 
-        {/* Filter */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.1 }}
-          className="flex flex-wrap justify-center gap-3 mb-12"
-        >
-          {spaces.map((space) => (
-            <button
-              key={space}
-              onClick={() => setFilter(space)}
-              className="px-6 py-2 rounded-lg font-semibold transition-all"
+        {/* Filter Bar */}
+        {spaceFilters.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            className="flex flex-wrap justify-center gap-2 mb-10"
+          >
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setActiveFilter("all")}
+              className="px-5 py-2 rounded-full text-sm font-semibold transition-all"
               style={{
-                backgroundColor:
-                  filter === space ? "var(--cta-primary)" : "var(--surface)",
-                color:
-                  filter === space ? "white" : "var(--text-primary)",
-                border: filter === space ? "none" : "1px solid var(--border)",
-              }}
-              onMouseEnter={(e) => {
-                if (filter !== space) {
-                  e.currentTarget.style.backgroundColor = "var(--surface)";
-                  e.currentTarget.style.opacity = "0.8";
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (filter !== space) {
-                  e.currentTarget.style.opacity = "1";
-                }
+                backgroundColor: activeFilter === "all" ? "var(--cta-primary)" : "var(--surface)",
+                color: activeFilter === "all" ? "white" : "var(--text-primary)",
+                border: `2px solid ${activeFilter === "all" ? "var(--cta-primary)" : "var(--border)"}`,
               }}
             >
-              {space.charAt(0).toUpperCase() + space.slice(1)}
-            </button>
-          ))}
-        </motion.div>
-
-        {/* Gallery Grid */}
-        <div className="grid md:grid-cols-3 gap-6">
-          {filtered.map((item, i) => (
-            <motion.div
-              key={item.id}
-              layout
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.3 }}
-              onClick={() => handleImageClick(item, i)}
-              className="group cursor-pointer rounded-lg overflow-hidden card card-hover"
-              style={{
-                backgroundColor: "var(--surface)",
-                borderColor: "var(--border)",
-              }}
-            >
-              <div
-                className="w-full h-64 bg-cover bg-center relative group-hover:scale-110 transition-transform duration-300"
+              All
+            </motion.button>
+            {spaceFilters.map(space => (
+              <motion.button
+                key={space.id}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setActiveFilter(space.id)}
+                className="px-5 py-2 rounded-full text-sm font-semibold transition-all"
                 style={{
-                  backgroundImage: `url('${item.image}')`,
+                  backgroundColor: activeFilter === space.id ? "var(--cta-primary)" : "var(--surface)",
+                  color: activeFilter === space.id ? "white" : "var(--text-primary)",
+                  border: `2px solid ${activeFilter === space.id ? "var(--cta-primary)" : "var(--border)"}`,
                 }}
               >
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-6">
-                  <div>
-                    <p className="text-white/70 text-sm mb-1">{item.space}</p>
-                    <h3 className="text-white heading-h3">{item.title}</h3>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          ))}
-        </div>
+                {space.name}
+              </motion.button>
+            ))}
+          </motion.div>
+        )}
 
-        {/* Image Preview Modal */}
-        {selectedImage && (
+        {/* Gallery Grid */}
+        {loading ? (
+          <div className="flex justify-center items-center h-64">
+            <div className="w-8 h-8 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: "var(--cta-primary)" }} />
+          </div>
+        ) : filteredItems.length === 0 ? (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setSelectedImage(null)}
-            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            className="text-center py-20"
+            style={{ color: "var(--text-muted)" }}
           >
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              onClick={(e) => e.stopPropagation()}
-              className="relative w-full max-w-4xl"
-            >
-              {/* Close Button */}
-              <button
-                onClick={() => setSelectedImage(null)}
-                className="absolute top-4 right-4 p-2 rounded-lg z-10 transition-all"
-                style={{ backgroundColor: "rgba(255, 255, 255, 0.1)" }}
-                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.2)")}
-                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.1)")}
-              >
-                <X size={24} color="white" />
-              </button>
-
-              {/* Main Image */}
-              <div
-                className="w-full h-96 md:h-[600px] bg-cover bg-center rounded-lg"
-                style={{
-                  backgroundImage: `url('${selectedImage.image}')`,
-                }}
-              />
-
-              {/* Image Info */}
-              <div className="mt-6 text-white">
-                <p className="text-sm opacity-70 mb-2">{selectedImage.space}</p>
-                <h2 className="heading-h2 mb-4">{selectedImage.title}</h2>
-              </div>
-
-              {/* Navigation Arrows */}
-              {currentIndex > 0 && (
-                <motion.button
-                  onClick={handlePrev}
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 p-3 rounded-full transition-all"
-                  style={{ backgroundColor: "rgba(255, 255, 255, 0.1)" }}
-                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.2)")}
-                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.1)")}
+            <p>{activeFilter === "all" ? "No images have been added to the gallery yet." : "No images tagged to this space yet."}</p>
+          </motion.div>
+        ) : (
+          <motion.div layout className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
+            <AnimatePresence mode="popLayout">
+              {filteredItems.map((item, i) => (
+                <motion.div
+                  key={item.id}
+                  layout
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.8 }}
+                  transition={{ duration: 0.4, delay: i * 0.03 }}
+                  onClick={() => handleImageClick(item, i)}
+                  className="group cursor-pointer rounded-xl overflow-hidden card card-hover relative"
+                  style={{
+                    backgroundColor: "var(--surface)",
+                    borderColor: "var(--border)",
+                  }}
                 >
-                  <ChevronLeft size={24} color="white" />
-                </motion.button>
-              )}
-
-              {currentIndex < filtered.length - 1 && (
-                <motion.button
-                  onClick={handleNext}
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.95 }}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 p-3 rounded-full transition-all"
-                  style={{ backgroundColor: "rgba(255, 255, 255, 0.1)" }}
-                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.2)")}
-                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.1)")}
-                >
-                  <ChevronRight size={24} color="white" />
-                </motion.button>
-              )}
-
-              {/* Image Counter */}
-              <div className="mt-6 text-center text-white/70">
-                {currentIndex + 1} / {filtered.length}
-              </div>
-            </motion.div>
+                  <div
+                    className="w-full h-48 md:h-64 bg-cover bg-center relative group-hover:scale-110 transition-transform duration-500"
+                    style={{ backgroundImage: `url('${item.url}')` }}
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4">
+                      <div>
+                        {item.space_name && (
+                          <span className="inline-block px-2 py-1 rounded-md text-[10px] font-bold text-white mb-1" style={{ background: "var(--cta-primary)" }}>
+                            {item.space_name}
+                          </span>
+                        )}
+                        <p className="text-white text-sm font-semibold">View Image</p>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+            </AnimatePresence>
           </motion.div>
         )}
+
+        {/* Image Preview Modal */}
+        <AnimatePresence>
+          {selectedImage && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setSelectedImage(null)}
+              className="fixed inset-0 bg-black/90 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            >
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                onClick={(e) => e.stopPropagation()}
+                className="relative w-full max-w-5xl"
+              >
+                {/* Close Button */}
+                <button
+                  onClick={() => setSelectedImage(null)}
+                  className="absolute top-4 right-4 p-2 rounded-lg z-10 transition-all"
+                  style={{ backgroundColor: "rgba(255, 255, 255, 0.1)" }}
+                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.2)")}
+                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "rgba(255, 255, 255, 0.1)")}
+                >
+                  <X size={24} color="white" />
+                </button>
+
+                {/* Main Image Container */}
+                <div className="relative w-full h-[60vh] md:h-[80vh] flex items-center justify-center">
+                  <img
+                    src={selectedImage.url}
+                    alt="Gallery preview"
+                    className="max-w-full max-h-full object-contain rounded-lg"
+                  />
+
+                  {/* Navigation Arrows */}
+                  {currentIndex > 0 && (
+                    <motion.button
+                      onClick={handlePrev}
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.95 }}
+                      className="absolute left-4 top-1/2 -translate-y-1/2 p-3 rounded-full transition-all"
+                      style={{ backgroundColor: "rgba(0, 0, 0, 0.5)" }}
+                    >
+                      <ChevronLeft size={24} color="white" />
+                    </motion.button>
+                  )}
+
+                  {currentIndex < filteredItems.length - 1 && (
+                    <motion.button
+                      onClick={handleNext}
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.95 }}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 p-3 rounded-full transition-all"
+                      style={{ backgroundColor: "rgba(0, 0, 0, 0.5)" }}
+                    >
+                      <ChevronRight size={24} color="white" />
+                    </motion.button>
+                  )}
+                </div>
+
+                {/* Image Info */}
+                <div className="mt-4 flex items-center justify-center gap-3">
+                  <span className="text-white/70 text-sm">
+                    {currentIndex + 1} / {filteredItems.length}
+                  </span>
+                  {selectedImage.space_name && (
+                    <span className="px-3 py-1 rounded-full text-xs font-semibold" style={{ background: "var(--cta-primary)", color: "white" }}>
+                      {selectedImage.space_name}
+                    </span>
+                  )}
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* CTA */}
         <motion.div
@@ -224,10 +307,16 @@ export function GalleryContent() {
           </p>
           <Link href="/booking">
             <button
-              className="inline-flex items-center gap-2 px-8 py-3 font-semibold rounded-lg text-white transition-all"
+              className="inline-flex items-center gap-2 px-8 py-3 font-semibold rounded-lg text-white transition-all shadow-lg"
               style={{ backgroundColor: "var(--cta-primary)" }}
-              onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.9")}
-              onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = "translateY(-2px)";
+                e.currentTarget.style.boxShadow = "0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.boxShadow = "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1)";
+              }}
             >
               Book Your Session <ChevronRight size={20} />
             </button>

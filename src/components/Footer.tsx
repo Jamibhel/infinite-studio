@@ -2,10 +2,12 @@
 
 import Link from "next/link"
 import { Mail, MapPin, Phone, Instagram } from "lucide-react"
+import { useSettings } from "@/lib/settings-context"
 
 export function Footer() {
   // exclude special styling for booking page if required
   const isBooking = typeof window !== "undefined" && window.location.pathname.startsWith("/booking")
+  const { settings } = useSettings()
 
   return (
     <footer
@@ -20,7 +22,7 @@ export function Footer() {
         <div className="grid md:grid-cols-4 gap-8 mb-8">
           {/* Brand */}
           <div>
-            <h3 className="font-display text-2xl font-bold mb-4">Infinite</h3>
+            <h3 className="font-display text-2xl font-bold mb-4">{settings.studio_name ? settings.studio_name.split(" ")[0] : "Infinite"}</h3>
             <p className="font-body text-sm text-gray-400">
               Where Your Vision Comes to Life
             </p>
@@ -63,11 +65,11 @@ export function Footer() {
               </li>
               <li className="flex items-center gap-2 text-gray-400 hover:text-dark-accent transition-colors">
                 <Phone size={16} />
-                <a href="tel:+2347000000000">+234 700 0000 000</a>
+                <a href={`tel:${settings.phone.replace(/\s+/g, '')}`}>{settings.phone}</a>
               </li>
               <li className="flex items-center gap-2 text-gray-400 hover:text-dark-accent transition-colors">
                 <Mail size={16} />
-                <a href="mailto:hello@infinitestudio.com">hello@infinitestudio.com</a>
+                <a href={`mailto:${settings.email}`}>{settings.email}</a>
               </li>
             </ul>
           </div>
@@ -77,7 +79,7 @@ export function Footer() {
             <h4 className="font-body font-semibold mb-4">Follow Us</h4>
             <div className="flex gap-4">
               <a
-                href="https://instagram.com/de_infinite_space"
+                href={settings.instagram.startsWith('@') ? `https://instagram.com/${settings.instagram.substring(1)}` : `https://instagram.com/${settings.instagram}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-10 h-10 rounded-soft bg-dark-stone flex items-center justify-center hover:bg-dark-accent transition-colors"
@@ -90,7 +92,7 @@ export function Footer() {
 
         {/* Bottom */}
         <div className="border-t border-dark-stone pt-8 flex flex-col md:flex-row justify-between items-center text-sm text-gray-400">
-          <p>© 2025 Infinite Studio. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} {settings.studio_name}. All rights reserved.</p>
           <div className="flex gap-6 mt-4 md:mt-0">
             <Link href="/admin" className="hover:text-dark-accent transition-colors font-semibold">
               Admin

@@ -2,7 +2,7 @@
 
 import { AdminLayout } from "@/components/AdminLayout"
 import { motion, AnimatePresence } from "framer-motion"
-import { Upload, Trash2, Image as ImageIcon, X, RefreshCw, CheckCircle2 } from "lucide-react"
+import { Upload, Trash2, Image as ImageIcon, X, RefreshCw, Tag } from "lucide-react"
 import { useState, useRef, useEffect, useCallback } from "react"
 import { createClient } from "@supabase/supabase-js"
 import toast from "react-hot-toast"
@@ -12,15 +12,24 @@ interface GalleryItem {
   filename: string
   url: string
   created_at: string
+  space_id: string | null
+  caption: string
+}
+
+interface SpaceOption {
+  id: string
+  name: string
 }
 
 export default function GalleryPage() {
   const [items, setItems] = useState<GalleryItem[]>([])
+  const [spaces, setSpaces] = useState<SpaceOption[]>([])
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
   const [isDragging, setIsDragging] = useState(false)
   const [selected, setSelected] = useState<GalleryItem | null>(null)
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
+  const [tagSpaceId, setTagSpaceId] = useState<string>("")
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const supabase = createClient(
@@ -28,21 +37,64 @@ export default function GalleryPage() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ""
   )
 
-  useEffect(() => { fetchGallery() }, [])
+  useEffect(() => {
+    ensureMetadataTable()
+    fetchSpaces()
+    fetchGallery()
+  }, [])
+
+  const ensureMetadataTable = async () => {
+    // Create gallery_metadata table if it doesn't exist
+    try {
+      await supabase.rpc("exec_sql", {
+        sql: `CREATE TABLE IF NOT EXISTS gallery_metadata (
+          id TEXT PRIMARY KEY,
+          space_id TEXT,
+          caption TEXT DEFAULT '',
+          created_at TIMESTAMPTZ DEFAULT NOW()
+        );`
+      })
+    } catch {
+      // RPC might not exist — try a simple select to check
+      const { error } = await supabase.from("gallery_metadata").select("id").limit(1)
+      if (error && error.code === "42P01") {
+        // Table doesn't exist — we'll work without metadata
+        console.warn("gallery_metadata table not found. Tags will not be saved. Create it manually in Supabase.")
+      }
+    }
+  }
+
+  const fetchSpaces = async () => {
+    try {
+      const { data } = await supabase.from("spaces").select("id, name").eq("is_active", true).order("sort_order")
+      setSpaces((data || []).map((s: any) => ({ id: s.id, name: s.name })))
+    } catch {}
+  }
 
   const fetchGallery = async () => {
     try {
       setLoading(true)
-      const { data, error } = await supabase.storage.from("gallery").list("", { limit: 200 })
-      if (error) throw error
+      const [storageRes, metaRes] = await Promise.all([
+        supabase.storage.from("gallery").list("", { limit: 200 }),
+        supabase.from("gallery_metadata").select("*")
+      ])
 
-      const withUrls = (data || [])
-        .filter(f => !f.name.startsWith("."))
-        .map(f => ({
+      if (storageRes.error) throw storageRes.error
+
+      const metaMap: Record<string, any> = {}
+      if (metaRes.data) {
+        for (const m of metaRes.data) { metaMap[m.id] = m }
+      }
+
+      const withUrls = (storageRes.data || [])
+        .filter((f: any) => !f.name.startsWith("."))
+        .map((f: any) => ({
           id: f.name,
           filename: f.name,
           url: supabase.storage.from("gallery").getPublicUrl(f.name).data.publicUrl,
           created_at: f.created_at || new Date().toISOString(),
+          space_id: metaMap[f.name]?.space_id || null,
+          caption: metaMap[f.name]?.caption || "",
         }))
 
       setItems(withUrls)
@@ -65,6 +117,11 @@ export default function GalleryPage() {
       const filename = `${Date.now()}-${file.name}`
       const { error } = await supabase.storage.from("gallery").upload(filename, file)
       if (error) { toast.error(`Failed: ${file.name}`); continue }
+      
+      // Save metadata with space tag if selected
+      if (tagSpaceId) {
+        await supabase.from("gallery_metadata").upsert({ id: filename, space_id: tagSpaceId, caption: "" }, { onConflict: "id" })
+      }
       uploaded++
     }
 
@@ -75,10 +132,25 @@ export default function GalleryPage() {
     setUploading(false)
   }
 
+  const updateTag = async (itemId: string, spaceId: string | null) => {
+    try {
+      await supabase.from("gallery_metadata").upsert(
+        { id: itemId, space_id: spaceId || null, caption: "" },
+        { onConflict: "id" }
+      )
+      setItems(prev => prev.map(i => i.id === itemId ? { ...i, space_id: spaceId || null } : i))
+      toast.success("Tag updated")
+    } catch {
+      toast.error("Failed to update tag")
+    }
+  }
+
   const deleteItem = async (id: string) => {
     try {
       const { error } = await supabase.storage.from("gallery").remove([id])
       if (error) throw error
+      // Also remove metadata
+      await supabase.from("gallery_metadata").delete().eq("id", id)
       setItems(prev => prev.filter(i => i.id !== id))
       if (selected?.id === id) setSelected(null)
       setDeleteConfirm(null)
@@ -88,13 +160,18 @@ export default function GalleryPage() {
     }
   }
 
+  const getSpaceName = (spaceId: string | null) => {
+    if (!spaceId) return null
+    return spaces.find(s => s.id === spaceId)?.name || spaceId
+  }
+
   const onDragOver = useCallback((e: React.DragEvent) => { e.preventDefault(); setIsDragging(true) }, [])
   const onDragLeave = useCallback(() => setIsDragging(false), [])
   const onDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault()
     setIsDragging(false)
     if (e.dataTransfer.files) handleFiles(e.dataTransfer.files)
-  }, [])
+  }, [tagSpaceId])
 
   return (
     <AdminLayout>
@@ -104,7 +181,7 @@ export default function GalleryPage() {
         <div className="flex items-center justify-between">
           <div>
             <h2 className="font-display text-3xl font-bold" style={{ color: "var(--text-primary)" }}>Gallery</h2>
-            <p className="text-sm mt-1 font-body" style={{ color: "var(--text-muted)" }}>{items.length} images · 5MB max per image</p>
+            <p className="text-sm mt-1 font-body" style={{ color: "var(--text-muted)" }}>{items.length} images · Tag images to spaces for filtering</p>
           </div>
           <button
             onClick={fetchGallery}
@@ -113,6 +190,21 @@ export default function GalleryPage() {
           >
             <RefreshCw size={15} />
           </button>
+        </div>
+
+        {/* Tag selector for uploads */}
+        <div className="flex items-center gap-3">
+          <Tag size={16} style={{ color: "var(--cta-primary)" }} />
+          <label className="text-xs font-bold uppercase tracking-wide" style={{ color: "var(--text-muted)" }}>Tag new uploads to:</label>
+          <select
+            value={tagSpaceId}
+            onChange={e => setTagSpaceId(e.target.value)}
+            className="px-3 py-2 rounded-lg border text-sm"
+            style={{ background: "var(--surface)", borderColor: "var(--border)", color: "var(--text-primary)" }}
+          >
+            <option value="">No tag (General)</option>
+            {spaces.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+          </select>
         </div>
 
         {/* Upload Zone */}
@@ -178,6 +270,12 @@ export default function GalleryPage() {
                   className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                 />
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all" />
+                {/* Space tag badge */}
+                {item.space_id && (
+                  <div className="absolute bottom-2 left-2 px-2 py-1 rounded-lg text-[10px] font-bold text-white" style={{ background: "var(--cta-primary)" }}>
+                    {getSpaceName(item.space_id)}
+                  </div>
+                )}
                 <button
                   onClick={e => { e.stopPropagation(); setDeleteConfirm(item.id) }}
                   className="absolute top-2 right-2 w-7 h-7 rounded-full bg-white/90 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all"
@@ -190,7 +288,7 @@ export default function GalleryPage() {
         )}
       </div>
 
-      {/* Lightbox */}
+      {/* Lightbox with Tag controls */}
       <AnimatePresence>
         {selected && (
           <>
@@ -213,6 +311,21 @@ export default function GalleryPage() {
                   {selected.filename}
                 </p>
                 <div className="flex items-center gap-2">
+                  {/* Tag dropdown */}
+                  <select
+                    value={selected.space_id || ""}
+                    onChange={e => {
+                      const newId = e.target.value || null
+                      updateTag(selected.id, newId)
+                      setSelected({ ...selected, space_id: newId })
+                    }}
+                    className="px-2 py-1 rounded-lg border text-xs font-body"
+                    style={{ background: "var(--bg)", borderColor: "var(--border)", color: "var(--text-primary)" }}
+                    onClick={e => e.stopPropagation()}
+                  >
+                    <option value="">No tag</option>
+                    {spaces.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                  </select>
                   <button
                     onClick={() => setDeleteConfirm(selected.id)}
                     className="w-8 h-8 rounded-xl flex items-center justify-center"

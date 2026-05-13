@@ -5,10 +5,12 @@ import { useState } from "react"
 import { Menu, X, Sparkles, Image, BookOpen } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { ThemeToggle } from "./ThemeToggle"
+import { useSettings } from "@/lib/settings-context"
 
 export function Navigation() {
   const [isOpen, setIsOpen] = useState(false)
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null)
+  const { settings } = useSettings()
 
   const navItems = [
     { label: "The Studio", href: "/", icon: null },
@@ -45,7 +47,7 @@ export function Navigation() {
               className="font-display font-bold text-lg hidden sm:inline"
               style={{ color: "var(--text-primary)" }}
             >
-              Infinite
+              {settings.studio_name ? settings.studio_name.split(" ")[0] : "Infinite"}
             </span>
           </Link>
 

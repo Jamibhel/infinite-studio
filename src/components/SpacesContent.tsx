@@ -16,96 +16,7 @@ interface Space {
   pricing: number
 }
 
-const placeholderSpaces = [
-  {
-    id: "the-bar",
-    name: "The Bar",
-    description:
-      "Dark wood tones, ambient lighting, and a fully styled bar counter. Perfect for editorial shoots, music videos, lifestyle content, and anything with an edge.",
-    pricing: 12000,
-    mood_tag: "Lifestyle",
-    cover_image_url: null,
-    image: "https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?w=500&h=400&fit=crop",
-    features: ["Professional Bar Setup", "Ambient Lighting", "Moody Aesthetics", "Full Bar Equipment", "LED Accent Lighting"],
-  },
-  {
-    id: "green-screen",
-    name: "Green Screen Studio",
-    description:
-      "Step into any world. Our professional green screen setup gives you the power to place yourself anywhere — from fantasy sets to branded environments.",
-    pricing: 10000,
-    mood_tag: "Corporate",
-    cover_image_url: null,
-    image: "https://images.unsplash.com/photo-1536968335557-91d2582f3e91?w=500&h=400&fit=crop",
-    features: ["4K Green Screen", "Professional Lighting", "Unlimited Possibilities", "Chroma Key Ready", "Professional Rigging"],
-  },
-  {
-    id: "vanity-mirror",
-    name: "Vanity Mirror Corner",
-    description:
-      "Hollywood-style bulb lighting surrounds a full-length vanity mirror. Made for beauty content, brand shoots, and behind-the-scenes moments.",
-    pricing: 10500,
-    mood_tag: "Beauty",
-    cover_image_url: null,
-    image: "https://images.unsplash.com/photo-1560169897-fc0cdbdfa4d5?w=500&h=400&fit=crop",
-    features: ["Hollywood Lighting", "Full-Length Mirror", "Beauty Focused", "Professional Setup", "Perfect Lighting Angles"],
-  },
-  {
-    id: "eid-setup",
-    name: "Eid Shoot Setup",
-    description:
-      "An elegantly decorated space built to celebrate. Rich colours, soft textures, and details that make every cultural moment feel timeless.",
-    pricing: 15000,
-    mood_tag: "Cinematic",
-    cover_image_url: null,
-    image: "https://images.unsplash.com/photo-1519167758993-14554ea4c0c1?w=500&h=400&fit=crop",
-    features: ["Cultural Decor", "Festive Ambience", "Premium Setup", "Luxurious Textures", "Celebration Focused"],
-  },
-  {
-    id: "staircase",
-    name: "Staircase Scene",
-    description:
-      "Clean lines, natural light, and an architectural staircase that adds dimension and drama. A favourite for fashion, portrait, and lifestyle content.",
-    pricing: 11000,
-    mood_tag: "Editorial",
-    cover_image_url: null,
-    image: "https://images.unsplash.com/photo-1514432324607-2e467f4af3fb?w=500&h=400&fit=crop",
-    features: ["Natural Light", "Architectural Design", "Dramatic Angles", "Fashion Ready", "Geometric Perfection"],
-  },
-  {
-    id: "chair-space",
-    name: "Chair Space",
-    description:
-      "Simplicity at its finest. A beautifully lit, carefully styled single-chair setup — the kind of clean frame that lets your subject speak.",
-    pricing: 10000,
-    mood_tag: "Minimalist",
-    cover_image_url: null,
-    image: "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=500&h=400&fit=crop",
-    features: ["Minimal Design", "Clean Setup", "Subject Focused", "Perfect Lighting", "Interview Ready"],
-  },
-  {
-    id: "office-set",
-    name: "Office Set",
-    description:
-      "A sleek, contemporary workspace setting ideal for business content, LinkedIn shots, corporate videos, and professional brand storytelling.",
-    pricing: 12000,
-    mood_tag: "Corporate",
-    cover_image_url: null,
-    image: "https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=500&h=400&fit=crop",
-    features: ["Corporate Setup", "Modern Design", "Professional Grade", "Tech Ready", "Business Focused"],
-  },
-  {
-    id: "bookshelf",
-    name: "Bookshelf Wall",
-    description:
-      "Floor-to-ceiling books, warm lighting, and scholarly vibes. Perfect for thought leadership, educational content, and sophisticated storytelling.",
-    pricing: 11500,
-    mood_tag: "Intellectual",
-    cover_image_url: null,
-    image: "https://images.unsplash.com/photo-1507842217343-583b8cb2acde?w=500&h=400&fit=crop",
-    features: ["Bookshelf Backdrop", "Warm Lighting", "Intellectual Vibes", "Author Ready", "Educational Grade"],
-  },
-]
+
 
 export function SpacesContent() {
   const [spaces, setSpaces] = useState<any[]>([])
@@ -118,10 +29,56 @@ export function SpacesContent() {
   )
 
   useEffect(() => {
-    // Always use the 8 predefined spaces
-    setSpaces(placeholderSpaces)
-    setLoading(false)
+    fetchLiveSpaces()
+
+    const channel = supabase.channel('public:spaces')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'spaces' },
+        () => {
+          fetchLiveSpaces()
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
   }, [])
+
+  async function fetchLiveSpaces() {
+    try {
+      setLoading(true)
+      const { data, error } = await supabase
+        .from("spaces")
+        .select("*")
+        .eq("is_active", true)
+        .order("sort_order", { ascending: true })
+        
+      if (error) throw error
+
+      if (data && data.length > 0) {
+        const liveSpaces = data.map((s: any) => ({
+          id: s.id,
+          name: s.name,
+          description: s.description,
+          pricing: s.pricing || 10000,
+          mood_tag: s.mood_tag || "Modern",
+          image: s.gallery_images && s.gallery_images.length > 0 ? s.gallery_images[0] : "https://images.unsplash.com/photo-1511379938547-c1f69b13d835?w=500&h=400&fit=crop",
+          features: [] // amenities column removed
+        }))
+        setSpaces(liveSpaces)
+      } else {
+        // Fallback if no spaces exist in DB yet
+        setSpaces([])
+      }
+    } catch (err) {
+      setSpaces([])
+      console.error("Failed to fetch spaces:", err)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const getMoodColor = (mood: string) => {
     const colors: Record<string, string> = {
@@ -136,6 +93,14 @@ export function SpacesContent() {
       Intellectual: "#6366F1",
     }
     return colors[mood] || "#3B82F6"
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "var(--bg)" }}>
+        <div className="w-8 h-8 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: "var(--cta-primary)" }} />
+      </div>
+    )
   }
 
   return (
@@ -250,27 +215,6 @@ export function SpacesContent() {
                   >
                     {space.description}
                   </p>
-
-                  {/* FEATURES */}
-                  <div className="mb-4 space-y-2 text-sm">
-                    {space.features?.slice(0, 2).map((feature: string, i: number) => (
-                      <motion.div
-                        key={i}
-                        className="flex items-center gap-2"
-                        animate={{
-                          x: hoveredId === space.id ? 4 : 0,
-                        }}
-                        transition={{ duration: 0.3 }}
-                        style={{ color: "var(--text-muted)" }}
-                      >
-                        <div
-                          className="w-1.5 h-1.5 rounded-full"
-                          style={{ backgroundColor: getMoodColor(space.mood_tag) }}
-                        />
-                        {feature}
-                      </motion.div>
-                    ))}
-                  </div>
 
                   {/* DIVIDER */}
                   <div

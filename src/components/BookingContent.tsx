@@ -7,56 +7,21 @@ import { motion, AnimatePresence } from "framer-motion"
 import { ChevronRight, ChevronLeft, MessageCircle, Check, Plus, Minus } from "lucide-react"
 import toast from "react-hot-toast"
 import { createClient } from "@supabase/supabase-js"
+import { useSettings } from "@/lib/settings-context"
 
-const spaces = [
-  { id: "bar", name: "The Bar", price: 12000, priceText: "₦12,000/hr" },
-  { id: "green", name: "Green Screen Studio", price: 10000, priceText: "₦10,000/hr" },
-  { id: "vanity", name: "Vanity Mirror Corner", price: 10500, priceText: "₦10,500/hr" },
-  { id: "eid", name: "Eid Shoot Setup", price: 15000, priceText: "₦15,000/hr" },
-  { id: "staircase", name: "Staircase Scene", price: 11000, priceText: "₦11,000/hr" },
-  { id: "chair", name: "Chair Space", price: 10000, priceText: "₦10,000/hr" },
-  { id: "office", name: "Office Set", price: 12000, priceText: "₦12,000/hr" },
-  { id: "bookshelf", name: "Bookshelf Wall", price: 11500, priceText: "₦11,500/hr" },
-]
+export interface Space {
+  id: string
+  name: string
+  price: number
+  priceText: string
+}
 
-const addOns = [
-  {
-    id: "lighting",
-    name: "Professional Lighting Setup",
-    price: 5000,
-    description: "Advanced lighting rig with color temperature control",
-  },
-  {
-    id: "backdrop",
-    name: "Custom Backdrop Installation",
-    price: 3000,
-    description: "Hassle-free backdrop setup with your choice",
-  },
-  {
-    id: "props",
-    name: "Premium Props & Decor",
-    price: 4000,
-    description: "Curated selection of high-quality props",
-  },
-  {
-    id: "styling",
-    name: "Professional Styling Consultation",
-    price: 6000,
-    description: "Expert styling advice and setup optimization",
-  },
-  {
-    id: "camera",
-    name: "Camera & Equipment Rental",
-    price: 8000,
-    description: "Professional camera and lighting equipment",
-  },
-  {
-    id: "editing",
-    name: "Post-Production Editing Package",
-    price: 12000,
-    description: "Professional editing and color grading",
-  },
-]
+export interface AddOn {
+  id: string
+  name: string
+  price: number
+  description: string
+}
 
 interface BookingFormData {
   spaces: string[]
@@ -75,6 +40,13 @@ export function BookingContent() {
   const [step, setStep] = useState(1)
   const [selectedSpaces, setSelectedSpaces] = useState<string[]>([])
   const [selectedAddOns, setSelectedAddOns] = useState<string[]>([])
+  const [spaces, setSpaces] = useState<Space[]>([])
+  const [addOns, setAddOns] = useState<AddOn[]>([])
+  const [loading, setLoading] = useState(true)
+  const [hours, setHours] = useState(1)
+  const [customHours, setCustomHours] = useState(false)
+  const { settings } = useSettings()
+
   const {
     register,
     handleSubmit,
@@ -94,23 +66,51 @@ export function BookingContent() {
     },
   })
 
+  useEffect(() => {
+    const fetchData = async () => {
+      const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL || "",
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ""
+      )
+      
+      try {
+        const [spacesRes, configRes] = await Promise.all([
+          supabase.from("spaces").select("*").eq("is_active", true).order("sort_order", { ascending: true }),
+          supabase.from("site_config").select("*").eq("key", "addons")
+        ])
+        
+        if (spacesRes.data) {
+          setSpaces(spacesRes.data.map((s: any) => ({
+            id: s.id,
+            name: s.name,
+            price: s.pricing || 0,
+            priceText: `₦${(s.pricing || 0).toLocaleString()}/hr`
+          })))
+        }
+        
+        if (configRes.data && configRes.data.length > 0 && configRes.data[0].value) {
+          try {
+            setAddOns(JSON.parse(configRes.data[0].value))
+          } catch (e) {
+            console.error("Failed to parse addons from site_config", e)
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load booking data:", err)
+      } finally {
+        setLoading(false)
+      }
+    }
+    
+    fetchData()
+  }, [])
+
+
   // Pre-select space and add-ons from query params
   useEffect(() => {
     const spaceId = searchParams.get("space")
     if (spaceId) {
-      // Map detail page IDs to booking page IDs
-      const idMap: Record<string, string> = {
-        "the-bar": "bar",
-        "green-screen": "green",
-        "vanity-mirror": "vanity",
-        "eid-setup": "eid",
-        "staircase": "staircase",
-        "chair-space": "chair",
-        "office-set": "office",
-        "bookshelf": "bookshelf",
-      }
-      const bookingId = idMap[spaceId] || spaceId
-      setSelectedSpaces([bookingId])
+      setSelectedSpaces([spaceId])
     }
 
     // Pre-select add-ons from query param
@@ -158,6 +158,29 @@ export function BookingContent() {
     if (step > 1) setStep(step - 1)
   }
 
+  // Discount calculation
+  const getDiscount = (h: number) => {
+    if (h >= 5) return 0.10
+    if (h >= 3) return 0.05
+    return 0
+  }
+
+  const getDiscountLabel = (h: number) => {
+    if (h >= 5) return "10% Half-Day Discount"
+    if (h >= 3) return "5% Multi-Hour Discount"
+    return ""
+  }
+
+  const calcPricing = () => {
+    const spacePrice = selectedSpaces.reduce((sum, s) => sum + (spaces.find(sp => sp.id === s)?.price || 0), 0)
+    const addOnPrice = selectedAddOns.reduce((sum, a) => sum + (addOns.find(ad => ad.id === a)?.price || 0), 0)
+    const subtotal = spacePrice * hours
+    const discount = getDiscount(hours)
+    const discountAmount = Math.round(subtotal * discount)
+    const total = subtotal - discountAmount + addOnPrice
+    return { spacePrice, addOnPrice, subtotal, discount, discountAmount, total }
+  }
+
   const onSubmit = async (data: BookingFormData) => {
     const bookingData = {
       ...data,
@@ -166,35 +189,27 @@ export function BookingContent() {
     }
 
     try {
-      // Calculate pricing
-      const spacePrice = selectedSpaces.reduce(
-        (sum, s) => sum + (spaces.find((sp) => sp.id === s)?.price || 0),
-        0
-      )
-      const addOnPrice = selectedAddOns.reduce(
-        (sum, a) => sum + (addOns.find((addon) => addon.id === a)?.price || 0),
-        0
-      )
-      const totalPrice = spacePrice + addOnPrice
+      const { spacePrice, addOnPrice, subtotal, discount, discountAmount, total } = calcPricing()
 
-      // Format message for WhatsApp
+      const discountLine = discount > 0
+        ? `*Discount:* ${discount * 100}% off (−₦${discountAmount.toLocaleString()})\n`
+        : ""
+
       const message = `
 Hi! I'd like to book a session at Infinite Studio.
 
-*Selected Spaces:* ${selectedSpaces.map((s) => spaces.find((sp) => sp.id === s)?.name).join(", ")}
-*Space Total:* ₦${spacePrice.toLocaleString()}
-
-${
-  selectedAddOns.length > 0
-    ? `*Add-ons:* ${selectedAddOns.map((a) => addOns.find((addon) => addon.id === a)?.name).join(", ")}
+*Selected Spaces:* ${selectedSpaces.map(s => spaces.find(sp => sp.id === s)?.name).join(", ")}
+*Hours:* ${hours} hour${hours > 1 ? "s" : ""}${hours >= 5 ? " (Half-Day)" : ""}
+*Space Subtotal:* ₦${subtotal.toLocaleString()}
+${discountLine}${selectedAddOns.length > 0
+  ? `*Add-ons:* ${selectedAddOns.map(a => addOns.find(ad => ad.id === a)?.name).join(", ")}
 *Add-ons Total:* ₦${addOnPrice.toLocaleString()}
 `
-    : ""
-}*Estimated Total:* ₦${totalPrice.toLocaleString()}
+  : ""
+}*Estimated Total:* ₦${total.toLocaleString()}
 
 *Date:* ${data.date}
 *Time:* ${data.time}
-*Hours:* 1 hour (minimum)
 *Group Size:* ${data.groupSize}
 *Name:* ${data.name}
 *Email:* ${data.email}
@@ -220,15 +235,12 @@ Please confirm availability and final pricing.
         status: "pending",
         group_size: data.groupSize,
         addons: selectedAddOns,
-        amount: totalPrice,
+        amount: total,
         notes: data.notes,
         created_at: new Date().toISOString(),
       }
 
-      const { data: insertData, error: dbError } = await supabase
-        .from("bookings")
-        .insert([bookingRecord])
-
+      const { error: dbError } = await supabase.from("bookings").insert([bookingRecord])
       if (dbError) {
         console.error("Booking save error:", dbError.message)
         toast.error("Booking sent via WhatsApp but failed to save in system. Contact admin.")
@@ -236,13 +248,16 @@ Please confirm availability and final pricing.
         toast.success("Booking confirmed and saved!")
       }
 
-      const whatsappUrl = `https://wa.me/2347040000000?text=${encodeURIComponent(message)}`
+      const waNumber = settings.whatsapp_number
+        ? settings.whatsapp_number.replace(/\D/g, "")
+        : settings.phone.replace(/\D/g, "")
+      const whatsappUrl = `https://wa.me/${waNumber}?text=${encodeURIComponent(message)}`
       window.open(whatsappUrl, "_blank")
 
-      // Reset form
       setStep(1)
       setSelectedSpaces([])
       setSelectedAddOns([])
+      setHours(1)
     } catch (error) {
       toast.error("Failed to process booking")
       console.error(error)
@@ -425,7 +440,7 @@ Please confirm availability and final pricing.
               </motion.div>
             )}
 
-            {/* STEP 2: DATE & TIME */}
+            {/* STEP 2: DATE & TIME & HOURS */}
             {step === 2 && (
               <motion.div
                 key="step2"
@@ -434,49 +449,96 @@ Please confirm availability and final pricing.
                 exit={{ opacity: 0, y: -20 }}
                 transition={{ duration: 0.3 }}
               >
-                <h2 className="heading-h2 mb-8">Step 2: Choose Date & Time</h2>
+                <h2 className="heading-h2 mb-8">Step 2: Date, Time & Duration</h2>
                 <div className="space-y-6 mb-8">
                   <div>
-                    <label
-                      className="block text-sm font-semibold mb-2"
-                      style={{ color: "var(--text-primary)" }}
-                    >
+                    <label className="block text-sm font-semibold mb-2" style={{ color: "var(--text-primary)" }}>
                       Preferred Date
                     </label>
                     <input
                       type="date"
                       {...register("date", { required: "Date is required" })}
                       className="w-full px-4 py-3 rounded-lg border-2"
-                      style={{
-                        backgroundColor: "var(--surface)",
-                        borderColor: errors.date ? "#ef4444" : "var(--surface)",
-                        color: "var(--text-primary)",
-                      }}
+                      style={{ backgroundColor: "var(--surface)", borderColor: errors.date ? "#ef4444" : "var(--surface)", color: "var(--text-primary)" }}
                     />
-                    {errors.date && (
-                      <p className="text-red-500 text-sm mt-2">{errors.date.message}</p>
-                    )}
+                    {errors.date && <p className="text-red-500 text-sm mt-2">{errors.date.message}</p>}
                   </div>
 
                   <div>
-                    <label
-                      className="block text-sm font-semibold mb-2"
-                      style={{ color: "var(--text-primary)" }}
-                    >
+                    <label className="block text-sm font-semibold mb-2" style={{ color: "var(--text-primary)" }}>
                       Preferred Time
                     </label>
                     <input
                       type="time"
                       {...register("time", { required: "Time is required" })}
                       className="w-full px-4 py-3 rounded-lg border-2"
-                      style={{
-                        backgroundColor: "var(--surface)",
-                        borderColor: errors.time ? "#ef4444" : "var(--surface)",
-                        color: "var(--text-primary)",
-                      }}
+                      style={{ backgroundColor: "var(--surface)", borderColor: errors.time ? "#ef4444" : "var(--surface)", color: "var(--text-primary)" }}
                     />
-                    {errors.time && (
-                      <p className="text-red-500 text-sm mt-2">{errors.time.message}</p>
+                    {errors.time && <p className="text-red-500 text-sm mt-2">{errors.time.message}</p>}
+                  </div>
+
+                  {/* Hours Selector */}
+                  <div>
+                    <label className="block text-sm font-semibold mb-3" style={{ color: "var(--text-primary)" }}>
+                      Duration (Hours)
+                    </label>
+                    <div className="grid grid-cols-4 gap-2 mb-3">
+                      {[1, 2, 3, 4].map(h => (
+                        <motion.button
+                          key={h} type="button"
+                          onClick={() => { setHours(h); setCustomHours(false) }}
+                          whileTap={{ scale: 0.95 }}
+                          className="relative py-3 rounded-lg font-semibold text-sm transition-all"
+                          style={{
+                            backgroundColor: hours === h && !customHours ? "var(--cta-primary)" : "var(--surface)",
+                            color: hours === h && !customHours ? "white" : "var(--text-primary)",
+                          }}
+                        >
+                          {h}hr{h > 1 ? "s" : ""}
+                          {h >= 3 && h < 5 && <span className="block text-[10px] opacity-75 mt-0.5">5% off</span>}
+                        </motion.button>
+                      ))}
+                    </div>
+                    <div className="grid grid-cols-3 gap-2 mb-3">
+                      <motion.button type="button" onClick={() => { setHours(5); setCustomHours(false) }} whileTap={{ scale: 0.95 }}
+                        className="py-3 rounded-lg font-semibold text-sm transition-all"
+                        style={{ backgroundColor: hours === 5 && !customHours ? "var(--cta-primary)" : "var(--surface)", color: hours === 5 && !customHours ? "white" : "var(--text-primary)" }}
+                      >
+                        Half Day<span className="block text-[10px] opacity-75 mt-0.5">5hrs · 10% off</span>
+                      </motion.button>
+                      <motion.button type="button" onClick={() => { setHours(10); setCustomHours(false) }} whileTap={{ scale: 0.95 }}
+                        className="py-3 rounded-lg font-semibold text-sm transition-all"
+                        style={{ backgroundColor: hours === 10 && !customHours ? "var(--cta-primary)" : "var(--surface)", color: hours === 10 && !customHours ? "white" : "var(--text-primary)" }}
+                      >
+                        Full Day<span className="block text-[10px] opacity-75 mt-0.5">10hrs · 10% off</span>
+                      </motion.button>
+                      <motion.button type="button" onClick={() => setCustomHours(true)} whileTap={{ scale: 0.95 }}
+                        className="py-3 rounded-lg font-semibold text-sm transition-all"
+                        style={{ backgroundColor: customHours ? "var(--cta-primary)" : "var(--surface)", color: customHours ? "white" : "var(--text-primary)" }}
+                      >
+                        Custom
+                      </motion.button>
+                    </div>
+                    {customHours && (
+                      <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }}>
+                        <input
+                          type="number" min={1} max={24} value={hours}
+                          onChange={e => setHours(Math.max(1, Math.min(24, Number(e.target.value))))}
+                          className="w-full px-4 py-3 rounded-lg border-2 text-sm"
+                          style={{ backgroundColor: "var(--surface)", borderColor: "var(--cta-primary)", color: "var(--text-primary)" }}
+                          placeholder="Enter number of hours"
+                        />
+                      </motion.div>
+                    )}
+                    {/* Discount badge */}
+                    {getDiscount(hours) > 0 && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }}
+                        className="mt-3 px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2"
+                        style={{ backgroundColor: "rgba(16, 185, 129, 0.1)", color: "#10B981" }}
+                      >
+                        🎉 {getDiscountLabel(hours)} applied!
+                      </motion.div>
                     )}
                   </div>
                 </div>
@@ -647,60 +709,42 @@ Please confirm availability and final pricing.
         </form>
 
         {/* SUMMARY */}
-        {selectedSpaces.length > 0 && (
-          <motion.div
-            className="mt-12 p-6 rounded-lg glass-strong"
-            style={{
-              border: "2px solid var(--cta-primary)",
-            }}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
-            <h3 className="font-semibold mb-4">Booking Summary</h3>
-            <div style={{ color: "var(--text-muted)" }} className="space-y-2 text-sm">
-              <p>
-                <strong>Spaces:</strong>{" "}
-                {selectedSpaces
-                  .map((s) => spaces.find((sp) => sp.id === s)?.name)
-                  .join(", ")}
-              </p>
-              {watchDate && <p><strong>Date:</strong> {watchDate}</p>}
-              {watchTime && <p><strong>Time:</strong> {watchTime}</p>}
-              {watchName && <p><strong>Name:</strong> {watchName}</p>}
+        {selectedSpaces.length > 0 && (() => {
+          const { spacePrice, addOnPrice, subtotal, discount, discountAmount, total } = calcPricing()
+          return (
+            <motion.div
+              className="mt-12 p-6 rounded-xl glass-strong"
+              style={{ border: "2px solid var(--cta-primary)" }}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+            >
+              <h3 className="font-semibold mb-4">Booking Summary</h3>
+              <div style={{ color: "var(--text-muted)" }} className="space-y-2 text-sm">
+                <p><strong>Spaces:</strong> {selectedSpaces.map(s => spaces.find(sp => sp.id === s)?.name).join(", ")}</p>
+                <p><strong>Duration:</strong> {hours} hour{hours > 1 ? "s" : ""}{hours >= 5 ? " (Half-Day)" : ""}</p>
+                {watchDate && <p><strong>Date:</strong> {watchDate}</p>}
+                {watchTime && <p><strong>Time:</strong> {watchTime}</p>}
+                {watchName && <p><strong>Name:</strong> {watchName}</p>}
 
-              {/* Pricing breakdown */}
-              <div className="mt-2">
-                <p>
-                  <strong>Spaces Total:</strong>{" "}
-                  ₦{selectedSpaces
-                    .reduce((sum, s) => sum + (spaces.find((sp) => sp.id === s)?.price || 0), 0)
-                    .toLocaleString()}
-                </p>
-                <p>
-                  <strong>Add-ons:</strong>{" "}
-                  {selectedAddOns.length === 0
-                    ? "None"
-                    : selectedAddOns
-                        .map((a) => addOns.find((ad) => ad.id === a)?.name)
-                        .join(", ")}
-                </p>
-                <p>
-                  <strong>Add-ons Total:</strong>{" "}
-                  ₦{selectedAddOns
-                    .reduce((sum, a) => sum + (addOns.find((ad) => ad.id === a)?.price || 0), 0)
-                    .toLocaleString()}
-                </p>
-                <p className="mt-1">
-                  <strong>Estimated Total:</strong>{" "}
-                  ₦{(
-                    selectedSpaces.reduce((sum, s) => sum + (spaces.find((sp) => sp.id === s)?.price || 0), 0) +
-                    selectedAddOns.reduce((sum, a) => sum + (addOns.find((ad) => ad.id === a)?.price || 0), 0)
-                  ).toLocaleString()}
-                </p>
+                <div className="mt-3 pt-3 border-t" style={{ borderColor: "var(--border)" }}>
+                  <p><strong>Space Rate:</strong> ₦{spacePrice.toLocaleString()}/hr × {hours}hr{hours > 1 ? "s" : ""} = ₦{subtotal.toLocaleString()}</p>
+                  {discount > 0 && (
+                    <p style={{ color: "#10B981" }}><strong>{getDiscountLabel(hours)}:</strong> −₦{discountAmount.toLocaleString()}</p>
+                  )}
+                  {selectedAddOns.length > 0 && (
+                    <>
+                      <p><strong>Add-ons:</strong> {selectedAddOns.map(a => addOns.find(ad => ad.id === a)?.name).join(", ")}</p>
+                      <p><strong>Add-ons Total:</strong> ₦{addOnPrice.toLocaleString()}</p>
+                    </>
+                  )}
+                  <p className="mt-2 text-base font-bold" style={{ color: "var(--text-primary)" }}>
+                    <strong>Estimated Total:</strong> ₦{total.toLocaleString()}
+                  </p>
+                </div>
               </div>
-            </div>
-          </motion.div>
-        )}
+            </motion.div>
+          )
+        })()}
       </div>
     </main>
   )
