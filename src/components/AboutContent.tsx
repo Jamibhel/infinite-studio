@@ -9,19 +9,19 @@ const reasons = [
     title: "Designed for Real Results",
     description:
       "Every space is built with photography and videography in mind. We obsess over angles, lighting ratios, and colour theory so your content stands out.",
-    image: "https://images.unsplash.com/photo-1514432324607-2e467f4af3fb?w=500&h=400&fit=crop",
+    image: "/about-1.png",
   },
   {
     title: "A Space for Everyone",
     description:
       "Solo creator. Fashion brand. Corporate team. Family portrait. Influencer. Whatever your goal, there's a space here for you.",
-    image: "https://images.unsplash.com/photo-1552664730-d307ca884978?w=500&h=400&fit=crop",
+    image: "/about-2.png",
   },
   {
     title: "A Full Experience",
     description:
       "From arrival to upload, we want every moment to feel effortless, premium, and worth every kobo.",
-    image: "https://images.unsplash.com/photo-1552664730-d307ca884978?w=500&h=400&fit=crop",
+    image: "/about-3.png",
   },
 ]
 
@@ -86,10 +86,11 @@ export function AboutContent() {
               >
                 {/* Image */}
                 <div
-                  className="h-72 rounded-lg bg-cover bg-center"
+                  className="h-96 rounded-2xl bg-cover bg-center shadow-xl border-4"
                   style={{
                     backgroundImage: `url('${reason.image}')`,
                     order: i % 2 === 1 ? 2 : 1,
+                    borderColor: "var(--surface)"
                   }}
                 />
                 {/* Content */}

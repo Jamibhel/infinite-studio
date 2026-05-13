@@ -80,6 +80,8 @@ export default function SettingsPage() {
   const [phoneAlt, setPhoneAlt] = useState("")
   const [email, setEmail] = useState("")
   const [website, setWebsite] = useState("")
+  const [tiktok, setTiktok] = useState("")
+  const [facebook, setFacebook] = useState("")
 
   // Theme
   const [lightBg, setLightBg] = useState("#FAF8F4")
@@ -120,6 +122,8 @@ export default function SettingsPage() {
       setPhoneAlt(map.phone_alt || "")
       setEmail(map.email || "")
       setWebsite(map.website || "")
+      setTiktok(map.tiktok || "")
+      setFacebook(map.facebook || "")
       setLightBg(map.light_bg || "#FAF8F4")
       setDarkBg(map.dark_bg || "#0D0D0D")
       setPrimaryCta(map.primary_cta || "#C9A84C")
@@ -170,6 +174,8 @@ export default function SettingsPage() {
         { key: "phone_alt", value: phoneAlt },
         { key: "email", value: email },
         { key: "website", value: website },
+        { key: "tiktok", value: tiktok },
+        { key: "facebook", value: facebook },
         { key: "light_bg", value: lightBg },
         { key: "dark_bg", value: darkBg },
         { key: "primary_cta", value: primaryCta },
@@ -213,7 +219,11 @@ export default function SettingsPage() {
             <InputField label="Studio Name" value={studioName} onChange={e => setStudioName(e.target.value)} />
             <TextareaField label="Studio Description" value={studioDescription} onChange={e => setStudioDescription(e.target.value)} rows={3} />
             <InputField label="Hero Marquee Text" value={marqueeText} onChange={e => setMarqueeText(e.target.value)} placeholder="Editorial · Cinematic · Lifestyle" />
-            <InputField label="Instagram Handle" value={instagram} onChange={e => setInstagram(e.target.value)} placeholder="@de_infinite_space" />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <InputField label="Instagram Handle" value={instagram} onChange={e => setInstagram(e.target.value)} placeholder="@de_infinite_space" />
+              <InputField label="TikTok Handle" value={tiktok} onChange={e => setTiktok(e.target.value)} placeholder="@infinite_studio" />
+              <InputField label="Facebook Page" value={facebook} onChange={e => setFacebook(e.target.value)} placeholder="Infinite Studio" />
+            </div>
           </SectionCard>
 
           {/* Contact Section */}
@@ -354,7 +364,7 @@ export default function SettingsPage() {
 
       {/* Sticky Bottom Save Action Bar */}
       <div 
-        className="fixed bottom-0 md:bottom-auto md:top-0 right-0 left-0 md:left-64 z-40 p-4 border-t md:border-t-0 md:border-b backdrop-blur-xl"
+        className="fixed bottom-[72px] md:bottom-auto md:top-0 right-0 left-0 md:left-64 z-40 p-4 border-t md:border-t-0 md:border-b backdrop-blur-xl"
         style={{ 
           background: "color-mix(in srgb, var(--surface) 85%, transparent)", 
           borderColor: "var(--border)" 

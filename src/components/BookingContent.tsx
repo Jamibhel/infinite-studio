@@ -1,10 +1,11 @@
 "use client"
+import Link from "next/link"
 
 import { useState, useEffect } from "react"
 import { useSearchParams } from "next/navigation"
 import { useForm } from "react-hook-form"
 import { motion, AnimatePresence } from "framer-motion"
-import { ChevronRight, ChevronLeft, MessageCircle, Check, Plus, Minus } from "lucide-react"
+import { ChevronRight, ChevronLeft, MessageCircle, Check, Plus, Minus, CheckCircle2 } from "lucide-react"
 import toast from "react-hot-toast"
 import { createClient } from "@supabase/supabase-js"
 import { useSettings } from "@/lib/settings-context"
@@ -45,6 +46,7 @@ export function BookingContent() {
   const [loading, setLoading] = useState(true)
   const [hours, setHours] = useState(1)
   const [customHours, setCustomHours] = useState(false)
+  const [bookingId, setBookingId] = useState<string | null>(null)
   const { settings } = useSettings()
 
   const {
@@ -240,19 +242,20 @@ Please confirm availability and final pricing.
         created_at: new Date().toISOString(),
       }
 
-      const { error: dbError } = await supabase.from("bookings").insert([bookingRecord])
+      const { data: inserted, error: dbError } = await supabase.from("bookings").insert([bookingRecord]).select().single()
       if (dbError) {
         console.error("Booking save error:", dbError.message)
-        toast.error("Booking sent via WhatsApp but failed to save in system. Contact admin.")
+        toast.error("Booking failed to save in system. Please try again or contact admin.")
+        return
       } else {
         toast.success("Booking confirmed and saved!")
+        if (inserted) {
+          setBookingId(inserted.id)
+        }
       }
 
-      const waNumber = settings.whatsapp_number
-        ? settings.whatsapp_number.replace(/\D/g, "")
-        : settings.phone.replace(/\D/g, "")
-      const whatsappUrl = `https://wa.me/${waNumber}?text=${encodeURIComponent(message)}`
-      window.open(whatsappUrl, "_blank")
+      setStep(5) // Show Success Screen
+
 
       setStep(1)
       setSelectedSpaces([])
@@ -278,34 +281,36 @@ Please confirm availability and final pricing.
           </p>
         </div>
 
-        {/* PROGRESS INDICATOR */}
-        <div className="flex justify-between items-center mb-12">
-          {[1, 2, 3, 4].map((num) => (
-            <div key={num} className="flex items-center flex-1">
+        {/* STEP PROGRESS - Hide if on success step */}
+        {step < 5 && (
+          <div className="flex justify-between items-center mb-12 relative">
+            <div className="absolute top-1/2 left-0 right-0 h-1 -translate-y-1/2 z-0" style={{ backgroundColor: "var(--surface)" }}>
               <motion.div
-                className="w-10 h-10 rounded-full flex items-center justify-center font-semibold text-sm cursor-pointer"
-                style={{
-                  backgroundColor: step >= num ? "var(--cta-primary)" : "var(--surface)",
-                  color: step >= num ? "white" : "var(--text-muted)",
-                }}
-                whileHover={{ scale: 1.05 }}
-              >
-                {step > num ? <Check size={20} /> : num}
-              </motion.div>
-              {num < 4 && (
-                <div
-                  className="h-1 flex-1 mx-2"
-                  style={{
-                    backgroundColor: step > num ? "var(--cta-primary)" : "var(--surface)",
-                  }}
-                />
-              )}
+                className="h-full"
+                style={{ backgroundColor: "var(--cta-primary)" }}
+                initial={{ width: "0%" }}
+                animate={{ width: `${((step - 1) / 3) * 100}%` }}
+                transition={{ duration: 0.5 }}
+              />
             </div>
-          ))}
-        </div>
+            {[1, 2, 3, 4].map((i) => (
+              <div
+                key={i}
+                className="w-10 h-10 rounded-full flex items-center justify-center font-bold z-10 transition-all shadow-md"
+                style={{
+                  backgroundColor: step >= i ? "var(--cta-primary)" : "var(--surface)",
+                  color: step >= i ? "white" : "var(--text-muted)",
+                  border: `2px solid ${step >= i ? "var(--cta-primary)" : "var(--border)"}`
+                }}
+              >
+                {step > i ? <CheckCircle2 size={20} /> : i}
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* FORM STEPS */}
-        <form onSubmit={handleSubmit(onSubmit)}>
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
           <AnimatePresence mode="wait">
             {/* STEP 1: SELECT SPACES */}
             {step === 1 && (
@@ -660,11 +665,52 @@ Please confirm availability and final pricing.
               </motion.div>
             )}
 
-            {/* STEP 4: (removed) - add-ons moved to Step 1 */}
+            {/* STEP 5: Success Screen */}
+            {step === 5 && (
+              <motion.div
+                key="step5"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="text-center py-12"
+              >
+                <div className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6" style={{ backgroundColor: "rgba(16, 185, 129, 0.1)" }}>
+                  <CheckCircle2 size={40} style={{ color: "#10B981" }} />
+                </div>
+                <h2 className="heading-h2 mb-4">Booking Request Sent!</h2>
+                <p className="text-lg mb-8" style={{ color: "var(--text-muted)" }}>
+                  Your booking request has been successfully saved. Please send a message to our admin via WhatsApp to confirm your session.
+                </p>
+                <div className="p-6 rounded-xl mb-8 border border-dashed text-left max-w-sm mx-auto" style={{ backgroundColor: "var(--surface)", borderColor: "var(--text-muted)" }}>
+                  <p className="text-sm font-semibold mb-2" style={{ color: "var(--text-muted)", textTransform: "uppercase" }}>Your Booking ID</p>
+                  <p className="text-2xl font-bold font-mono tracking-wider">{bookingId ? bookingId.split('-')[0].toUpperCase() : "PENDING"}</p>
+                </div>
+                <div className="flex flex-col sm:flex-row justify-center gap-4">
+                  <Link href={`/booking/receipt/${bookingId}`} target="_blank">
+                    <button type="button" className="w-full sm:w-auto px-6 py-3 rounded-lg font-semibold flex items-center justify-center gap-2 border transition-all" style={{ backgroundColor: "var(--bg)", borderColor: "var(--border)", color: "var(--text-primary)" }}>
+                      View Receipt
+                    </button>
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const waNumber = settings.whatsapp_number ? settings.whatsapp_number.replace(/\D/g, "") : settings.phone.replace(/\D/g, "")
+                      const msg = `Hi Infinite Studio! I just submitted a booking request.\nMy Booking ID is: ${bookingId ? bookingId.split('-')[0].toUpperCase() : "Unknown"}`
+                      window.open(`https://wa.me/${waNumber}?text=${encodeURIComponent(msg)}`, "_blank")
+                    }}
+                    className="w-full sm:w-auto px-6 py-3 rounded-lg font-semibold flex items-center justify-center gap-2 transition-all shadow-md"
+                    style={{ backgroundColor: "#25D366", color: "white" }}
+                  >
+                    <MessageCircle size={20} /> Let Admin Know on WhatsApp
+                  </button>
+                </div>
+              </motion.div>
+            )}
           </AnimatePresence>
 
           {/* NAVIGATION BUTTONS */}
-          <div className="flex gap-4 justify-between">
+          {step < 5 && (
+            <div className="flex gap-4 justify-between">
             <motion.button
               type="button"
               onClick={handlePrevious}
@@ -705,11 +751,12 @@ Please confirm availability and final pricing.
                 Confirm via WhatsApp
               </motion.button>
             )}
-          </div>
+            </div>
+          )}
         </form>
 
         {/* SUMMARY */}
-        {selectedSpaces.length > 0 && (() => {
+        {step < 5 && selectedSpaces.length > 0 && (() => {
           const { spacePrice, addOnPrice, subtotal, discount, discountAmount, total } = calcPricing()
           return (
             <motion.div

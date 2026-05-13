@@ -2,7 +2,7 @@
 
 import { AdminLayout } from "@/components/AdminLayout"
 import { motion, AnimatePresence } from "framer-motion"
-import { Trash2, Calendar, Phone, Mail, Users, ChevronDown, RefreshCw, X, CheckCircle2, Clock, BarChart3 } from "lucide-react"
+import { Trash2, Calendar, Phone, Mail, Users, ChevronDown, RefreshCw, X, CheckCircle2, Clock, BarChart3, Link as LinkIcon, Copy } from "lucide-react"
 import { useState, useEffect } from "react"
 import { createClient } from "@supabase/supabase-js"
 import toast from "react-hot-toast"
@@ -317,6 +317,26 @@ export default function BookingsPage() {
                       )
                     })}
                   </div>
+                </div>
+
+                {/* Receipt Link */}
+                <div className="mb-4">
+                  <p className="text-xs uppercase tracking-wide font-semibold mb-2" style={{ color: "var(--text-muted)" }}>Share Receipt</p>
+                  <button
+                    onClick={() => {
+                      const url = `${window.location.origin}/booking/receipt/${selected.id}`
+                      navigator.clipboard.writeText(url)
+                      toast.success("Receipt link copied!")
+                    }}
+                    className="w-full flex items-center justify-between p-3 rounded-xl border transition-all hover:bg-opacity-80"
+                    style={{ background: "var(--bg)", borderColor: "var(--border)", color: "var(--text-primary)" }}
+                  >
+                    <div className="flex items-center gap-2">
+                      <LinkIcon size={16} style={{ color: "var(--cta-primary)" }} />
+                      <span className="text-sm font-semibold">Copy Receipt Link</span>
+                    </div>
+                    <Copy size={16} style={{ color: "var(--text-muted)" }} />
+                  </button>
                 </div>
 
                 {/* Delete */}

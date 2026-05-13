@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { Mail, MapPin, Phone, Instagram } from "lucide-react"
+import { Mail, MapPin, Phone, Instagram, Facebook } from "lucide-react"
 import { useSettings } from "@/lib/settings-context"
 
 export function Footer() {
@@ -78,14 +78,38 @@ export function Footer() {
           <div>
             <h4 className="font-body font-semibold mb-4">Follow Us</h4>
             <div className="flex gap-4">
-              <a
-                href={settings.instagram.startsWith('@') ? `https://instagram.com/${settings.instagram.substring(1)}` : `https://instagram.com/${settings.instagram}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-10 h-10 rounded-soft bg-dark-stone flex items-center justify-center hover:bg-dark-accent transition-colors"
-              >
-                <Instagram size={18} />
-              </a>
+              {settings.instagram && (
+                <a
+                  href={settings.instagram.startsWith('@') ? `https://instagram.com/${settings.instagram.substring(1)}` : `https://instagram.com/${settings.instagram}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-10 h-10 rounded-soft bg-dark-stone flex items-center justify-center hover:bg-dark-accent transition-colors"
+                >
+                  <Instagram size={18} />
+                </a>
+              )}
+              {settings.facebook && (
+                <a
+                  href={`https://facebook.com/${settings.facebook}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-10 h-10 rounded-soft bg-dark-stone flex items-center justify-center hover:bg-dark-accent transition-colors"
+                >
+                  <Facebook size={18} />
+                </a>
+              )}
+              {settings.tiktok && (
+                <a
+                  href={settings.tiktok.startsWith('@') ? `https://tiktok.com/${settings.tiktok}` : `https://tiktok.com/@${settings.tiktok}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-10 h-10 rounded-soft bg-dark-stone flex items-center justify-center hover:bg-dark-accent transition-colors"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5"/>
+                  </svg>
+                </a>
+              )}
             </div>
           </div>
         </div>

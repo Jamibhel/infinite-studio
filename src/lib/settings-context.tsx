@@ -17,6 +17,8 @@ export interface SiteSettings {
   light_bg: string
   dark_bg: string
   primary_cta: string
+  tiktok: string
+  facebook: string
 }
 
 const defaultSettings: SiteSettings = {
@@ -32,6 +34,8 @@ const defaultSettings: SiteSettings = {
   light_bg: "#FAF8F4",
   dark_bg: "#0D0D0D",
   primary_cta: "#C9A84C",
+  tiktok: "",
+  facebook: "",
 }
 
 interface SettingsContextType {
@@ -77,6 +81,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
           light_bg: map.light_bg || defaultSettings.light_bg,
           dark_bg: map.dark_bg || defaultSettings.dark_bg,
           primary_cta: map.primary_cta || defaultSettings.primary_cta,
+          tiktok: map.tiktok || defaultSettings.tiktok,
+          facebook: map.facebook || defaultSettings.facebook,
         }
         
         setSettings(newSettings)
