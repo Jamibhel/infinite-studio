@@ -364,7 +364,7 @@ export default function SettingsPage() {
 
       {/* Sticky Bottom Save Action Bar */}
       <div 
-        className="fixed bottom-[72px] md:bottom-auto md:top-0 right-0 left-0 md:left-64 z-40 p-4 border-t md:border-t-0 md:border-b backdrop-blur-xl"
+        className="fixed bottom-28 md:bottom-auto md:top-0 right-0 left-0 md:left-64 z-40 p-4 border-t md:border-t-0 md:border-b backdrop-blur-xl"
         style={{ 
           background: "color-mix(in srgb, var(--surface) 85%, transparent)", 
           borderColor: "var(--border)" 
