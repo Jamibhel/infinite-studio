@@ -782,17 +782,18 @@ Please confirm availability and final pricing.
             >
               <h3 className="font-semibold mb-4">Booking Summary</h3>
               <div style={{ color: "var(--text-muted)" }} className="space-y-2 text-sm">
-                <p><strong>Spaces:</strong> {selectedSpaces.map(s => {
+                <p><strong>Spaces:</strong> {selectedSpaces.map((s, index) => {
                   const space = spaces.find(sp => sp.id === s);
                   return (
                     <span key={s}>
+                      {index > 0 && ", "}
                       {space?.name}
                       {space?.is_promo && space?.promo_price ? (
                         <span className="ml-1 text-xs font-bold" style={{ color: "var(--cta-primary)" }}>(Promo: ₦{space.promo_price.toLocaleString()}/hr)</span>
                       ) : null}
                     </span>
                   );
-                }).reduce((prev, curr) => [prev, ", ", curr])}</p>
+                })}</p>
                 <p><strong>Duration:</strong> {hours} hour{hours > 1 ? "s" : ""}{hours >= 5 ? " (Half-Day)" : ""}</p>
                 {watchDate && <p><strong>Date:</strong> {watchDate}</p>}
                 {watchTime && <p><strong>Time:</strong> {watchTime}</p>}
