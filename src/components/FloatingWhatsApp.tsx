@@ -39,7 +39,7 @@ export default function FloatingWhatsApp() {
       transition={{ duration: 0.5, delay: 0.5 }}
       whileHover={{ scale: 1.1 }}
       whileTap={{ scale: 0.95 }}
-      className="fixed bottom-6 right-6 z-40 md:hidden"
+      className="fixed bottom-6 right-6 z-40 md:hidden print:hidden"
     >
       <div
         className="w-16 h-16 rounded-full flex items-center justify-center shadow-lg cursor-pointer"

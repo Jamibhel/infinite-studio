@@ -11,7 +11,7 @@ export function Footer() {
 
   return (
     <footer
-      className={`text-[var(--text-muted)] border-t`} 
+      className={`text-[var(--text-muted)] border-t print:hidden`} 
       style={{
         backgroundColor: "var(--surface)",
         color: "var(--text-muted)",

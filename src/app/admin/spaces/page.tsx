@@ -16,6 +16,8 @@ interface Space {
   gallery_images: string[]
   pricing?: number
   amenities?: string[]
+  is_promo?: boolean
+  promo_price?: number
 }
 
 const AMENITIES = [
@@ -84,6 +86,7 @@ export default function SpacesPage() {
         description: s.description || "", is_active: s.is_active !== false,
         gallery_images: s.gallery_images || [], pricing: s.pricing || 0,
         amenities: s.amenities || [],
+        is_promo: s.is_promo || false, promo_price: s.promo_price || 0,
       })))
     } catch { toast.error("Failed to load spaces") }
     finally { setLoading(false) }
@@ -136,6 +139,8 @@ export default function SpacesPage() {
           pricing: formData.pricing || 0,
           amenities: formData.amenities || [],
           sort_order: spaces.length,
+          is_promo: formData.is_promo || false,
+          promo_price: formData.promo_price || 0,
         }
         const { error } = await supabase.from("spaces").insert([insertData])
         if (error) { console.error("Insert error:", error); toast.error(error.message || "Failed to create space"); return }
@@ -144,6 +149,7 @@ export default function SpacesPage() {
         const { error } = await supabase.from("spaces").update({
           name: formData.name, mood_tag: formData.mood_tag, description: formData.description,
           pricing: formData.pricing, gallery_images: formData.gallery_images, amenities: formData.amenities || [],
+          is_promo: formData.is_promo || false, promo_price: formData.promo_price || 0,
         }).eq("id", selected.id)
         if (error) { console.error("Update error:", error); toast.error(error.message || "Failed to update space"); return }
         toast.success("Space updated!")
@@ -349,6 +355,12 @@ export default function SpacesPage() {
                       }}>
                       {space.is_active ? "Active" : "Inactive"}
                     </span>
+                    {space.is_promo && (
+                      <span className="text-[10px] font-bold px-2.5 py-1 rounded-full ml-2"
+                        style={{ background: "rgba(139,92,246,0.15)", color: "#8B5CF6" }}>
+                        Promo
+                      </span>
+                    )}
                   </div>
                 </div>
 
@@ -373,7 +385,14 @@ export default function SpacesPage() {
                   <div className="flex items-center justify-between text-xs font-body" style={{ color: "var(--text-muted)" }}>
                     <span>{space.gallery_images?.length || 0} images</span>
                     <span style={{ color: "var(--cta-primary)", fontWeight: 700 }}>
-                      {space.pricing ? `₦${space.pricing.toLocaleString()}/hr` : "Price —"}
+                      {space.is_promo && space.promo_price ? (
+                        <>
+                          <span className="line-through opacity-50 mr-2 text-[10px]">₦{space.pricing?.toLocaleString()}</span>
+                          ₦{space.promo_price.toLocaleString()}/hr
+                        </>
+                      ) : (
+                        space.pricing ? `₦${space.pricing.toLocaleString()}/hr` : "Price —"
+                      )}
                     </span>
                   </div>
 
@@ -467,6 +486,25 @@ export default function SpacesPage() {
 
                   <div>
                     <InputField label="Price (₦/hour)" type="number" value={formData.pricing || 0} onChange={e => setFormData(p => ({ ...p, pricing: +e.target.value }))} />
+                  </div>
+                  
+                  {/* Promo Pricing */}
+                  <div className="p-4 rounded-xl border" style={{ borderColor: "var(--border)", background: "var(--bg)" }}>
+                    <div className="flex items-center justify-between mb-3">
+                      <div>
+                        <label className="block text-xs uppercase tracking-wide font-semibold font-body" style={{ color: "var(--text-primary)" }}>Promo Pricing</label>
+                        <p className="text-[10px] font-body" style={{ color: "var(--text-muted)" }}>Enable special discounted rate</p>
+                      </div>
+                      <button type="button" onClick={() => setFormData(p => ({ ...p, is_promo: !p.is_promo }))}
+                        className="flex-shrink-0" style={{ color: formData.is_promo ? "#8B5CF6" : "var(--text-muted)" }}>
+                        {formData.is_promo ? <ToggleRight size={32} /> : <ToggleLeft size={32} />}
+                      </button>
+                    </div>
+                    {formData.is_promo && (
+                      <div className="pt-2 border-t" style={{ borderColor: "var(--border)" }}>
+                        <InputField label="Promo Price (₦/hour)" type="number" value={formData.promo_price || 0} onChange={e => setFormData(p => ({ ...p, promo_price: +e.target.value }))} />
+                      </div>
+                    )}
                   </div>
 
 

@@ -49,6 +49,21 @@ export default function ReceiptPage() {
           .single()
 
         if (error) throw error
+
+        if (data.spaces && data.spaces.length > 0) {
+          const { data: spacesData } = await supabase
+             .from("spaces")
+             .select("id, name")
+             .in("id", data.spaces)
+          if (spacesData) {
+             const spaceNames = data.spaces.map((sid: string) => {
+                const s = spacesData.find((sd: any) => sd.id === sid)
+                return s ? s.name : sid
+             })
+             data.spaces = spaceNames
+          }
+        }
+
         setBooking(data)
       } catch (err) {
         console.error("Error fetching booking:", err)
@@ -72,9 +87,9 @@ export default function ReceiptPage() {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center pt-20 pb-20 px-4 text-center" style={{ backgroundColor: "var(--bg)", color: "var(--text-primary)" }}>
         <h1 className="heading-h1 mb-4">Receipt Not Found</h1>
-        <p className="text-lg mb-8" style={{ color: "var(--text-muted)" }}>We couldn't find a booking with that ID.</p>
+        <p className="text-lg font-bold mb-8" style={{ color: "var(--text-muted)" }}>We couldn't find a booking with that ID.</p>
         <Link href="/">
-          <button className="px-6 py-3 rounded-lg font-semibold" style={{ backgroundColor: "var(--cta-primary)", color: "white" }}>Return Home</button>
+          <button className="px-6 py-3 rounded-lg font-bold" style={{ backgroundColor: "var(--cta-primary)", color: "white" }}>Return Home</button>
         </Link>
       </div>
     )
@@ -88,18 +103,18 @@ export default function ReceiptPage() {
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="rounded-3xl overflow-hidden shadow-2xl border"
+          className="rounded-3xl overflow-hidden shadow-2xl border print:shadow-none print:border-none print:rounded-none"
           style={{ backgroundColor: "var(--surface)", borderColor: "var(--border)" }}
         >
           {/* Header Ticket Stub */}
           <div className="p-8 text-center relative border-b border-dashed" style={{ borderColor: "var(--text-muted)" }}>
-            <div className="absolute -left-4 -bottom-4 w-8 h-8 rounded-full" style={{ backgroundColor: "var(--bg)" }} />
-            <div className="absolute -right-4 -bottom-4 w-8 h-8 rounded-full" style={{ backgroundColor: "var(--bg)" }} />
+            <div className="absolute -left-4 -bottom-4 w-8 h-8 rounded-full print:hidden" style={{ backgroundColor: "var(--bg)" }} />
+            <div className="absolute -right-4 -bottom-4 w-8 h-8 rounded-full print:hidden" style={{ backgroundColor: "var(--bg)" }} />
             
-            <h2 className="font-display font-bold text-2xl uppercase tracking-widest mb-2" style={{ color: "var(--cta-primary)" }}>{settings.studio_name || "Infinite Studio"}</h2>
-            <p className="text-sm tracking-widest uppercase mb-6" style={{ color: "var(--text-muted)" }}>Booking Receipt</p>
+            <h2 className="font-display font-extrabold text-3xl uppercase tracking-widest mb-2" style={{ color: "var(--cta-primary)" }}>{settings.studio_name || "Infinite Studio"}</h2>
+            <p className="text-base font-bold tracking-widest uppercase mb-6" style={{ color: "var(--text-muted)" }}>Booking Receipt</p>
             
-            <div className="inline-block px-4 py-2 rounded-full font-bold text-sm tracking-wider uppercase mb-2" style={{ backgroundColor: sCfg.bg, color: sCfg.color }}>
+            <div className="inline-block px-4 py-2 rounded-full font-bold text-sm tracking-wider uppercase mb-2 print:border" style={{ backgroundColor: sCfg.bg, color: sCfg.color, borderColor: sCfg.color }}>
               {sCfg.label}
             </div>
           </div>
@@ -108,24 +123,24 @@ export default function ReceiptPage() {
           <div className="p-8 space-y-8">
             <div className="grid grid-cols-2 gap-6">
               <div>
-                <p className="text-xs uppercase tracking-wider font-semibold mb-1" style={{ color: "var(--text-muted)" }}>Booked For</p>
-                <p className="font-bold">{booking.name}</p>
-                <p className="text-sm mt-1" style={{ color: "var(--text-muted)" }}>{booking.phone}</p>
+                <p className="text-sm uppercase tracking-wider font-extrabold mb-1" style={{ color: "var(--text-muted)" }}>Booked For</p>
+                <p className="font-extrabold text-xl">{booking.name}</p>
+                <p className="text-base font-bold mt-1" style={{ color: "var(--text-muted)" }}>{booking.phone}</p>
               </div>
               <div>
-                <p className="text-xs uppercase tracking-wider font-semibold mb-1" style={{ color: "var(--text-muted)" }}>Booking ID</p>
-                <p className="font-mono font-bold">{booking.id.split('-')[0].toUpperCase()}</p>
+                <p className="text-sm uppercase tracking-wider font-extrabold mb-1" style={{ color: "var(--text-muted)" }}>Booking ID</p>
+                <p className="font-mono font-extrabold text-xl">{booking.id.split('-')[0].toUpperCase()}</p>
               </div>
             </div>
 
-            <div className="p-5 rounded-2xl flex flex-col gap-4" style={{ backgroundColor: "var(--bg)" }}>
+            <div className="p-5 rounded-2xl flex flex-col gap-4 print:border" style={{ backgroundColor: "var(--bg)", borderColor: "var(--border)" }}>
               <div className="flex items-center gap-4">
                 <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: "rgba(196,98,58,0.1)", color: "var(--cta-primary)" }}>
                   <Calendar size={20} />
                 </div>
                 <div>
-                  <p className="text-xs uppercase tracking-wider font-semibold" style={{ color: "var(--text-muted)" }}>Date</p>
-                  <p className="font-bold">{booking.preferred_date}</p>
+                  <p className="text-sm uppercase tracking-wider font-extrabold" style={{ color: "var(--text-muted)" }}>Date</p>
+                  <p className="font-extrabold text-lg">{new Date(booking.preferred_date).toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</p>
                 </div>
               </div>
               <div className="flex items-center gap-4">
@@ -133,17 +148,17 @@ export default function ReceiptPage() {
                   <Clock size={20} />
                 </div>
                 <div>
-                  <p className="text-xs uppercase tracking-wider font-semibold" style={{ color: "var(--text-muted)" }}>Time</p>
-                  <p className="font-bold">{booking.preferred_time}</p>
+                  <p className="text-sm uppercase tracking-wider font-extrabold" style={{ color: "var(--text-muted)" }}>Time</p>
+                  <p className="font-extrabold text-lg">{booking.preferred_time}</p>
                 </div>
               </div>
             </div>
 
             <div>
-              <p className="text-xs uppercase tracking-wider font-semibold mb-3" style={{ color: "var(--text-muted)" }}>Spaces Reserved</p>
+              <p className="text-sm uppercase tracking-wider font-extrabold mb-3" style={{ color: "var(--text-muted)" }}>Spaces Reserved</p>
               <div className="flex flex-wrap gap-2">
                 {booking.spaces.map(s => (
-                  <span key={s} className="px-3 py-1.5 rounded-lg text-sm font-bold border" style={{ borderColor: "var(--cta-primary)", color: "var(--cta-primary)" }}>
+                  <span key={s} className="px-4 py-2 rounded-lg text-base font-extrabold border bg-opacity-10" style={{ borderColor: "var(--cta-primary)", color: "var(--cta-primary)", backgroundColor: "var(--cta-primary)" }}>
                     {s}
                   </span>
                 ))}
@@ -152,32 +167,42 @@ export default function ReceiptPage() {
 
             {booking.addons && booking.addons.length > 0 && (
               <div>
-                <p className="text-xs uppercase tracking-wider font-semibold mb-3" style={{ color: "var(--text-muted)" }}>Add-ons</p>
-                <p className="text-sm font-semibold">{booking.addons.join(", ")}</p>
+                <p className="text-sm uppercase tracking-wider font-extrabold mb-3" style={{ color: "var(--text-muted)" }}>Add-ons</p>
+                <div className="flex flex-col gap-2">
+                  {booking.addons.map(addon => {
+                    const cleaned = addon.split('-').slice(0, -1).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') || addon
+                    return (
+                      <p key={addon} className="font-extrabold text-base flex items-center gap-2">
+                        <CheckCircle2 size={16} style={{color: "var(--cta-primary)"}}/> 
+                        {cleaned}
+                      </p>
+                    )
+                  })}
+                </div>
               </div>
             )}
 
             <div className="border-t pt-6" style={{ borderColor: "var(--border)" }}>
               <div className="flex justify-between items-center text-lg">
-                <span className="font-semibold">Total Amount</span>
-                <span className="font-bold text-2xl" style={{ color: "var(--text-primary)" }}>₦{booking.amount?.toLocaleString() || "0"}</span>
+                <span className="font-extrabold text-xl">Total Amount</span>
+                <span className="font-extrabold text-3xl" style={{ color: "var(--text-primary)" }}>₦{booking.amount?.toLocaleString() || "0"}</span>
               </div>
             </div>
           </div>
 
-          <div className="p-6 text-center text-sm" style={{ backgroundColor: "var(--bg)", color: "var(--text-muted)" }}>
-            <p className="mb-2 font-semibold">Thank you for choosing {settings.studio_name}</p>
-            <p className="flex items-center justify-center gap-1"><MapPin size={14} /> Omida Shopping Complex, Abeokuta</p>
+          <div className="p-6 text-center text-sm print:border-t" style={{ backgroundColor: "var(--bg)", color: "var(--text-muted)", borderColor: "var(--border)" }}>
+            <p className="mb-2 font-extrabold text-base">Thank you for choosing {settings.studio_name}</p>
+            <p className="flex items-center justify-center gap-2 font-bold"><MapPin size={16} /> Omida Shopping Complex, Abeokuta</p>
           </div>
         </motion.div>
 
-        <div className="mt-8 flex justify-center">
+        <div className="mt-8 flex justify-center print:hidden">
           <button 
             onClick={() => window.print()}
-            className="flex items-center gap-2 px-6 py-3 rounded-lg font-semibold transition-all border"
-            style={{ backgroundColor: "var(--surface)", borderColor: "var(--border)", color: "var(--text-primary)" }}
+            className="flex items-center gap-2 px-8 py-4 rounded-xl font-extrabold text-lg transition-all border"
+            style={{ backgroundColor: "var(--cta-primary)", color: "white", borderColor: "var(--cta-primary)" }}
           >
-            <Download size={20} /> Download / Print Receipt
+            <Download size={24} /> Download / Print Receipt
           </button>
         </div>
       </div>

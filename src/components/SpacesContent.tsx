@@ -14,6 +14,8 @@ interface Space {
   cover_image_url: string | null
   is_active: boolean
   pricing: number
+  is_promo?: boolean
+  promo_price?: number
 }
 
 
@@ -63,6 +65,8 @@ export function SpacesContent() {
           name: s.name,
           description: s.description,
           pricing: s.pricing || 10000,
+          is_promo: s.is_promo || false,
+          promo_price: s.promo_price || 0,
           mood_tag: s.mood_tag || "Modern",
           image: s.gallery_images && s.gallery_images.length > 0 ? s.gallery_images[0] : "https://images.unsplash.com/photo-1511379938547-c1f69b13d835?w=500&h=400&fit=crop",
           features: [] // amenities column removed
@@ -165,6 +169,17 @@ export function SpacesContent() {
                   {/* OVERLAY GRADIENT */}
                   <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
+                  {/* PROMO TAG */}
+                  {space.is_promo && (
+                    <motion.div
+                      className="absolute top-4 left-4 px-3 py-1 rounded-full text-xs font-bold text-white shadow-lg flex items-center gap-1"
+                      style={{ backgroundColor: "#8B5CF6" }}
+                      animate={{ opacity: hoveredId === space.id ? 1 : 0.9 }}
+                    >
+                      PROMO
+                    </motion.div>
+                  )}
+
                   {/* MOOD TAG */}
                   <motion.div
                     className="absolute top-4 right-4 px-3 py-1 rounded-full text-sm font-semibold text-white"
@@ -232,10 +247,17 @@ export function SpacesContent() {
                           Starting at
                         </p>
                         <p
-                          className="text-2xl font-bold"
+                          className="text-2xl font-bold flex items-center"
                           style={{ color: "var(--cta-primary)" }}
                         >
-                          ₦{(space.pricing || 5500).toLocaleString()}
+                          {space.is_promo && space.promo_price ? (
+                            <>
+                              <span className="line-through opacity-50 mr-2 text-sm text-[var(--text-muted)]">₦{(space.pricing || 5500).toLocaleString()}</span>
+                              ₦{space.promo_price.toLocaleString()}
+                            </>
+                          ) : (
+                            `₦${(space.pricing || 5500).toLocaleString()}`
+                          )}
                           <span className="text-sm font-normal ml-1" style={{ color: "var(--text-muted)" }}>
                             /hour
                           </span>

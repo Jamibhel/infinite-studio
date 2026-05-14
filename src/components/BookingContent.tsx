@@ -15,6 +15,8 @@ export interface Space {
   name: string
   price: number
   priceText: string
+  is_promo?: boolean
+  promo_price?: number
 }
 
 export interface AddOn {
@@ -86,7 +88,9 @@ export function BookingContent() {
             id: s.id,
             name: s.name,
             price: s.pricing || 0,
-            priceText: `₦${(s.pricing || 0).toLocaleString()}/hr`
+            priceText: `₦${(s.pricing || 0).toLocaleString()}/hr`,
+            is_promo: s.is_promo || false,
+            promo_price: s.promo_price || 0
           })))
         }
         
@@ -174,7 +178,11 @@ export function BookingContent() {
   }
 
   const calcPricing = () => {
-    const spacePrice = selectedSpaces.reduce((sum, s) => sum + (spaces.find(sp => sp.id === s)?.price || 0), 0)
+    const spacePrice = selectedSpaces.reduce((sum, s) => {
+      const sp = spaces.find(sp => sp.id === s)
+      if (!sp) return sum
+      return sum + (sp.is_promo && sp.promo_price ? sp.promo_price : sp.price)
+    }, 0)
     const addOnPrice = selectedAddOns.reduce((sum, a) => sum + (addOns.find(ad => ad.id === a)?.price || 0), 0)
     const subtotal = spacePrice * hours
     const discount = getDiscount(hours)
@@ -340,18 +348,30 @@ Please confirm availability and final pricing.
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                     >
-                      <div className="flex justify-between items-center">
+                      <div className="flex justify-between items-center relative">
                         <div className="text-left">
-                          <p className="font-semibold">{space.name}</p>
+                          <p className="font-semibold flex items-center gap-2">
+                            {space.name}
+                            {space.is_promo && space.promo_price && (
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: "rgba(139,92,246,0.15)", color: selectedSpaces.includes(space.id) ? "white" : "#8B5CF6" }}>PROMO</span>
+                            )}
+                          </p>
                           <p
-                            className="text-sm"
+                            className="text-sm flex items-center gap-2 mt-1"
                             style={{
                               color: selectedSpaces.includes(space.id)
                                 ? "rgba(255, 255, 255, 0.9)"
                                 : "var(--text-muted)",
                             }}
                           >
-                            {space.price}
+                            {space.is_promo && space.promo_price ? (
+                              <>
+                                <span className="line-through opacity-70 text-xs">₦{space.price?.toLocaleString()}</span>
+                                <span className="font-bold">₦{space.promo_price.toLocaleString()}/hr</span>
+                              </>
+                            ) : (
+                              <span>{space.priceText}</span>
+                            )}
                           </p>
                         </div>
                         <div
@@ -762,7 +782,17 @@ Please confirm availability and final pricing.
             >
               <h3 className="font-semibold mb-4">Booking Summary</h3>
               <div style={{ color: "var(--text-muted)" }} className="space-y-2 text-sm">
-                <p><strong>Spaces:</strong> {selectedSpaces.map(s => spaces.find(sp => sp.id === s)?.name).join(", ")}</p>
+                <p><strong>Spaces:</strong> {selectedSpaces.map(s => {
+                  const space = spaces.find(sp => sp.id === s);
+                  return (
+                    <span key={s}>
+                      {space?.name}
+                      {space?.is_promo && space?.promo_price ? (
+                        <span className="ml-1 text-xs font-bold" style={{ color: "var(--cta-primary)" }}>(Promo: ₦{space.promo_price.toLocaleString()}/hr)</span>
+                      ) : null}
+                    </span>
+                  );
+                }).reduce((prev, curr) => [prev, ", ", curr])}</p>
                 <p><strong>Duration:</strong> {hours} hour{hours > 1 ? "s" : ""}{hours >= 5 ? " (Half-Day)" : ""}</p>
                 {watchDate && <p><strong>Date:</strong> {watchDate}</p>}
                 {watchTime && <p><strong>Time:</strong> {watchTime}</p>}
