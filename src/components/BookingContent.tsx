@@ -243,7 +243,7 @@ Please confirm availability and final pricing.
         preferred_date: data.date,
         preferred_time: data.time,
         status: "pending",
-        group_size: parseInt(data.groupSize) || 1,
+        group_size: data.groupSize || 1,
         addons: selectedAddOns,
         amount: total,
         notes: data.notes,
